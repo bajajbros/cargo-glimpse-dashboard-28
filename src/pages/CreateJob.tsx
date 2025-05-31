@@ -78,59 +78,61 @@ export default function CreateJob() {
   };
 
   return (
-    <div className="p-6">
-      <Card className="max-w-6xl mx-auto">
-        <CardHeader>
-          <CardTitle>Create New Job</CardTitle>
+    <div className="p-4 h-full overflow-y-auto">
+      <Card className="max-w-7xl mx-auto">
+        <CardHeader className="pb-4">
+          <CardTitle className="text-xl">Create New Job</CardTitle>
           <CardDescription>
             Fill in the details below to create a new logistics job
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-4">
               {/* Job Information */}
-              <div className="space-y-2">
-                <Label htmlFor="jobNumber">Job Number *</Label>
+              <div className="space-y-1">
+                <Label htmlFor="jobNumber" className="text-xs font-medium">Job Number *</Label>
                 <Input
                   id="jobNumber"
                   {...register("jobNumber")}
                   placeholder="FF-10010/25-26"
+                  className="h-8 text-sm"
                 />
                 {errors.jobNumber && (
-                  <p className="text-sm text-red-500">{errors.jobNumber.message}</p>
+                  <p className="text-xs text-red-500">{errors.jobNumber.message}</p>
                 )}
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="bookingNo">Booking Number *</Label>
+              <div className="space-y-1">
+                <Label htmlFor="bookingNo" className="text-xs font-medium">Booking Number *</Label>
                 <Input
                   id="bookingNo"
                   {...register("bookingNo")}
                   placeholder="3426"
+                  className="h-8 text-sm"
                 />
                 {errors.bookingNo && (
-                  <p className="text-sm text-red-500">{errors.bookingNo.message}</p>
+                  <p className="text-xs text-red-500">{errors.bookingNo.message}</p>
                 )}
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="invoiceNo">Invoice Number *</Label>
+              <div className="space-y-1">
+                <Label htmlFor="invoiceNo" className="text-xs font-medium">Invoice Number *</Label>
                 <Input
                   id="invoiceNo"
                   {...register("invoiceNo")}
                   placeholder="3426"
+                  className="h-8 text-sm"
                 />
                 {errors.invoiceNo && (
-                  <p className="text-sm text-red-500">{errors.invoiceNo.message}</p>
+                  <p className="text-xs text-red-500">{errors.invoiceNo.message}</p>
                 )}
               </div>
 
-              {/* Shipment Details */}
-              <div className="space-y-2">
-                <Label htmlFor="modeOfShipment">Mode of Shipment *</Label>
+              <div className="space-y-1">
+                <Label htmlFor="modeOfShipment" className="text-xs font-medium">Mode of Shipment *</Label>
                 <Select onValueChange={(value) => setValue("modeOfShipment", value)} defaultValue="Sea">
-                  <SelectTrigger>
+                  <SelectTrigger className="h-8 text-sm">
                     <SelectValue placeholder="Select mode" />
                   </SelectTrigger>
                   <SelectContent>
@@ -140,14 +142,14 @@ export default function CreateJob() {
                   </SelectContent>
                 </Select>
                 {errors.modeOfShipment && (
-                  <p className="text-sm text-red-500">{errors.modeOfShipment.message}</p>
+                  <p className="text-xs text-red-500">{errors.modeOfShipment.message}</p>
                 )}
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="shipmentType">Shipment Type *</Label>
+              <div className="space-y-1">
+                <Label htmlFor="shipmentType" className="text-xs font-medium">Shipment Type *</Label>
                 <Select onValueChange={(value) => setValue("shipmentType", value)} defaultValue="Import">
-                  <SelectTrigger>
+                  <SelectTrigger className="h-8 text-sm">
                     <SelectValue placeholder="Select type" />
                   </SelectTrigger>
                   <SelectContent>
@@ -156,26 +158,27 @@ export default function CreateJob() {
                   </SelectContent>
                 </Select>
                 {errors.shipmentType && (
-                  <p className="text-sm text-red-500">{errors.shipmentType.message}</p>
+                  <p className="text-xs text-red-500">{errors.shipmentType.message}</p>
                 )}
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="airShippingLine">Air/Shipping Line *</Label>
+              <div className="space-y-1">
+                <Label htmlFor="airShippingLine" className="text-xs font-medium">Air/Shipping Line *</Label>
                 <Input
                   id="airShippingLine"
                   {...register("airShippingLine")}
                   placeholder="ONE"
+                  className="h-8 text-sm"
                 />
                 {errors.airShippingLine && (
-                  <p className="text-sm text-red-500">{errors.airShippingLine.message}</p>
+                  <p className="text-xs text-red-500">{errors.airShippingLine.message}</p>
                 )}
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="lclFclAir">LCL/FCL/Air</Label>
+              <div className="space-y-1">
+                <Label htmlFor="lclFclAir" className="text-xs font-medium">LCL/FCL/Air</Label>
                 <Select onValueChange={(value) => setValue("lclFclAir", value)}>
-                  <SelectTrigger>
+                  <SelectTrigger className="h-8 text-sm">
                     <SelectValue placeholder="Select option" />
                   </SelectTrigger>
                   <SelectContent>
@@ -186,92 +189,96 @@ export default function CreateJob() {
                 </Select>
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="containerFlightNo">Container/Flight Number *</Label>
+              <div className="space-y-1">
+                <Label htmlFor="containerFlightNo" className="text-xs font-medium">Container/Flight Number *</Label>
                 <Input
                   id="containerFlightNo"
                   {...register("containerFlightNo")}
                   placeholder="ONEU0044026"
+                  className="h-8 text-sm"
                 />
                 {errors.containerFlightNo && (
-                  <p className="text-sm text-red-500">{errors.containerFlightNo.message}</p>
+                  <p className="text-xs text-red-500">{errors.containerFlightNo.message}</p>
                 )}
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="vesselVoyDetails">Vessel/Voyage Details *</Label>
+              <div className="space-y-1">
+                <Label htmlFor="vesselVoyDetails" className="text-xs font-medium">Vessel/Voyage Details *</Label>
                 <Input
                   id="vesselVoyDetails"
                   {...register("vesselVoyDetails")}
                   placeholder="EVER EAGLE - 188W"
+                  className="h-8 text-sm"
                 />
                 {errors.vesselVoyDetails && (
-                  <p className="text-sm text-red-500">{errors.vesselVoyDetails.message}</p>
+                  <p className="text-xs text-red-500">{errors.vesselVoyDetails.message}</p>
                 )}
               </div>
 
-              {/* Weight and Package Information */}
-              <div className="space-y-2">
-                <Label htmlFor="grossWeight">Gross Weight *</Label>
+              <div className="space-y-1">
+                <Label htmlFor="grossWeight" className="text-xs font-medium">Gross Weight *</Label>
                 <Input
                   id="grossWeight"
                   {...register("grossWeight")}
                   placeholder="10148.00"
+                  className="h-8 text-sm"
                 />
                 {errors.grossWeight && (
-                  <p className="text-sm text-red-500">{errors.grossWeight.message}</p>
+                  <p className="text-xs text-red-500">{errors.grossWeight.message}</p>
                 )}
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="netWeight">Net Weight *</Label>
+              <div className="space-y-1">
+                <Label htmlFor="netWeight" className="text-xs font-medium">Net Weight *</Label>
                 <Input
                   id="netWeight"
                   {...register("netWeight")}
                   placeholder="9800"
+                  className="h-8 text-sm"
                 />
                 {errors.netWeight && (
-                  <p className="text-sm text-red-500">{errors.netWeight.message}</p>
+                  <p className="text-xs text-red-500">{errors.netWeight.message}</p>
                 )}
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="totalPackages">Total Packages *</Label>
+              <div className="space-y-1">
+                <Label htmlFor="totalPackages" className="text-xs font-medium">Total Packages *</Label>
                 <Input
                   id="totalPackages"
                   {...register("totalPackages")}
                   placeholder="15 PLTS"
+                  className="h-8 text-sm"
                 />
                 {errors.totalPackages && (
-                  <p className="text-sm text-red-500">{errors.totalPackages.message}</p>
+                  <p className="text-xs text-red-500">{errors.totalPackages.message}</p>
                 )}
               </div>
 
-              {/* Document Numbers */}
-              <div className="space-y-2">
-                <Label htmlFor="hblNo">HBL Number *</Label>
+              <div className="space-y-1">
+                <Label htmlFor="hblNo" className="text-xs font-medium">HBL Number *</Label>
                 <Input
                   id="hblNo"
                   {...register("hblNo")}
                   placeholder="TPENDL25040858"
+                  className="h-8 text-sm"
                 />
                 {errors.hblNo && (
-                  <p className="text-sm text-red-500">{errors.hblNo.message}</p>
+                  <p className="text-xs text-red-500">{errors.hblNo.message}</p>
                 )}
               </div>
 
-              <div className="space-y-2">
-                <Label>HBL Date</Label>
+              <div className="space-y-1">
+                <Label className="text-xs font-medium">HBL Date</Label>
                 <Popover>
                   <PopoverTrigger asChild>
                     <Button
                       variant="outline"
                       className={cn(
-                        "w-full justify-start text-left font-normal",
+                        "w-full justify-start text-left font-normal h-8 text-sm",
                         !hblDate && "text-muted-foreground"
                       )}
                     >
-                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      <CalendarIcon className="mr-2 h-3 w-3" />
                       {hblDate ? format(hblDate, "PPP") : <span>Pick a date</span>}
                     </Button>
                   </PopoverTrigger>
@@ -281,36 +288,37 @@ export default function CreateJob() {
                       selected={hblDate}
                       onSelect={setHblDate}
                       initialFocus
-                      className="p-3 pointer-events-auto"
+                      className="p-3"
                     />
                   </PopoverContent>
                 </Popover>
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="mblNo">MBL Number *</Label>
+              <div className="space-y-1">
+                <Label htmlFor="mblNo" className="text-xs font-medium">MBL Number *</Label>
                 <Input
                   id="mblNo"
                   {...register("mblNo")}
                   placeholder="ONEYTPEF2627600"
+                  className="h-8 text-sm"
                 />
                 {errors.mblNo && (
-                  <p className="text-sm text-red-500">{errors.mblNo.message}</p>
+                  <p className="text-xs text-red-500">{errors.mblNo.message}</p>
                 )}
               </div>
 
-              <div className="space-y-2">
-                <Label>MBL Date</Label>
+              <div className="space-y-1">
+                <Label className="text-xs font-medium">MBL Date</Label>
                 <Popover>
                   <PopoverTrigger asChild>
                     <Button
                       variant="outline"
                       className={cn(
-                        "w-full justify-start text-left font-normal",
+                        "w-full justify-start text-left font-normal h-8 text-sm",
                         !mblDate && "text-muted-foreground"
                       )}
                     >
-                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      <CalendarIcon className="mr-2 h-3 w-3" />
                       {mblDate ? format(mblDate, "PPP") : <span>Pick a date</span>}
                     </Button>
                   </PopoverTrigger>
@@ -320,78 +328,81 @@ export default function CreateJob() {
                       selected={mblDate}
                       onSelect={setMblDate}
                       initialFocus
-                      className="p-3 pointer-events-auto"
+                      className="p-3"
                     />
                   </PopoverContent>
                 </Popover>
               </div>
 
-              {/* Location Information */}
-              <div className="space-y-2">
-                <Label htmlFor="portOfLoading">Port of Loading *</Label>
+              <div className="space-y-1">
+                <Label htmlFor="portOfLoading" className="text-xs font-medium">Port of Loading *</Label>
                 <Input
                   id="portOfLoading"
                   {...register("portOfLoading")}
                   placeholder="KAOHSIUNG"
+                  className="h-8 text-sm"
                 />
                 {errors.portOfLoading && (
-                  <p className="text-sm text-red-500">{errors.portOfLoading.message}</p>
+                  <p className="text-xs text-red-500">{errors.portOfLoading.message}</p>
                 )}
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="finalDestination">Final Destination *</Label>
+              <div className="space-y-1">
+                <Label htmlFor="finalDestination" className="text-xs font-medium">Final Destination *</Label>
                 <Input
                   id="finalDestination"
                   {...register("finalDestination")}
                   placeholder="ICD TKD"
+                  className="h-8 text-sm"
                 />
                 {errors.finalDestination && (
-                  <p className="text-sm text-red-500">{errors.finalDestination.message}</p>
+                  <p className="text-xs text-red-500">{errors.finalDestination.message}</p>
                 )}
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="etaPod">ETA POD *</Label>
+              <div className="space-y-1">
+                <Label htmlFor="etaPod" className="text-xs font-medium">ETA POD *</Label>
                 <Input
                   id="etaPod"
                   {...register("etaPod")}
                   placeholder="25/04/2025"
+                  className="h-8 text-sm"
                 />
                 {errors.etaPod && (
-                  <p className="text-sm text-red-500">{errors.etaPod.message}</p>
+                  <p className="text-xs text-red-500">{errors.etaPod.message}</p>
                 )}
               </div>
 
-              {/* Contact Information */}
-              <div className="space-y-2">
-                <Label htmlFor="rmName">RM Name *</Label>
+              <div className="space-y-1">
+                <Label htmlFor="rmName" className="text-xs font-medium">RM Name *</Label>
                 <Input
                   id="rmName"
                   {...register("rmName")}
                   placeholder="Manish Kumar (manish.kumar)"
+                  className="h-8 text-sm"
                 />
                 {errors.rmName && (
-                  <p className="text-sm text-red-500">{errors.rmName.message}</p>
+                  <p className="text-xs text-red-500">{errors.rmName.message}</p>
                 )}
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="terms">Terms *</Label>
+              <div className="space-y-1">
+                <Label htmlFor="terms" className="text-xs font-medium">Terms *</Label>
                 <Input
                   id="terms"
                   {...register("terms")}
                   placeholder="FOB"
+                  className="h-8 text-sm"
                 />
                 {errors.terms && (
-                  <p className="text-sm text-red-500">{errors.terms.message}</p>
+                  <p className="text-xs text-red-500">{errors.terms.message}</p>
                 )}
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="status">Status *</Label>
+              <div className="space-y-1">
+                <Label htmlFor="status" className="text-xs font-medium">Status *</Label>
                 <Select onValueChange={(value) => setValue("status", value)} defaultValue="Active">
-                  <SelectTrigger>
+                  <SelectTrigger className="h-8 text-sm">
                     <SelectValue placeholder="Select status" />
                   </SelectTrigger>
                   <SelectContent>
@@ -402,68 +413,72 @@ export default function CreateJob() {
                   </SelectContent>
                 </Select>
                 {errors.status && (
-                  <p className="text-sm text-red-500">{errors.status.message}</p>
+                  <p className="text-xs text-red-500">{errors.status.message}</p>
                 )}
               </div>
             </div>
 
             {/* Full-width fields */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="space-y-2">
-                <Label htmlFor="consigneeDetails">Consignee Details *</Label>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-1">
+                <Label htmlFor="consigneeDetails" className="text-xs font-medium">Consignee Details *</Label>
                 <Textarea
                   id="consigneeDetails"
                   {...register("consigneeDetails")}
                   placeholder="CROWNWELL INTERNATIONAL"
-                  rows={3}
+                  rows={2}
+                  className="text-sm"
                 />
                 {errors.consigneeDetails && (
-                  <p className="text-sm text-red-500">{errors.consigneeDetails.message}</p>
+                  <p className="text-xs text-red-500">{errors.consigneeDetails.message}</p>
                 )}
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="shipperDetails">Shipper Details *</Label>
+              <div className="space-y-1">
+                <Label htmlFor="shipperDetails" className="text-xs font-medium">Shipper Details *</Label>
                 <Textarea
                   id="shipperDetails"
                   {...register("shipperDetails")}
                   placeholder="GINKO FILM"
-                  rows={3}
+                  rows={2}
+                  className="text-sm"
                 />
                 {errors.shipperDetails && (
-                  <p className="text-sm text-red-500">{errors.shipperDetails.message}</p>
+                  <p className="text-xs text-red-500">{errors.shipperDetails.message}</p>
                 )}
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="overseasAgentDetails">Overseas Agent Details *</Label>
+              <div className="space-y-1">
+                <Label htmlFor="overseasAgentDetails" className="text-xs font-medium">Overseas Agent Details *</Label>
                 <Textarea
                   id="overseasAgentDetails"
                   {...register("overseasAgentDetails")}
                   placeholder="ORIENTAL VANGUARD LOGISTICS CO LTD"
-                  rows={3}
+                  rows={2}
+                  className="text-sm"
                 />
                 {errors.overseasAgentDetails && (
-                  <p className="text-sm text-red-500">{errors.overseasAgentDetails.message}</p>
+                  <p className="text-xs text-red-500">{errors.overseasAgentDetails.message}</p>
                 )}
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="remarks">Remarks</Label>
+              <div className="space-y-1">
+                <Label htmlFor="remarks" className="text-xs font-medium">Remarks</Label>
                 <Textarea
                   id="remarks"
                   {...register("remarks")}
                   placeholder="BILL AS PER QUOTE"
-                  rows={3}
+                  rows={2}
+                  className="text-sm"
                 />
               </div>
             </div>
 
-            <div className="flex justify-end space-x-4">
-              <Button type="button" variant="outline" onClick={() => reset()}>
+            <div className="flex justify-end space-x-3 pt-2">
+              <Button type="button" variant="outline" onClick={() => reset()} className="h-8 text-sm">
                 Clear Form
               </Button>
-              <Button type="submit" className="bg-blue-600 hover:bg-blue-700">
+              <Button type="submit" className="bg-blue-600 hover:bg-blue-700 h-8 text-sm">
                 Create Job
               </Button>
             </div>
