@@ -1,5 +1,6 @@
-
 import { useState, useMemo } from "react";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -19,7 +20,7 @@ import {
   DropdownMenuTrigger,
   DropdownMenuCheckboxItem,
 } from "@/components/ui/dropdown-menu";
-import { Search, ChevronDown, X } from "lucide-react";
+import { Search, FileText, Filter, ChevronDown, X } from "lucide-react";
 
 // Extended sample data with all fields
 const sampleJobs = [
@@ -332,6 +333,7 @@ type FilterType = {
 export default function ViewJobs() {
   const [searchTerm, setSearchTerm] = useState("");
   const [jobs] = useState(sampleJobs);
+  const [filters, setFilters] = useState<FilterType>({});
   const [activeFilters, setActiveFilters] = useState<FilterType>({});
 
   // Get unique values for each column for filtering
@@ -410,17 +412,17 @@ export default function ViewJobs() {
   const FilterDropdown = ({ column, label, values }: { column: string; label: string; values: string[] }) => (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <div className="flex items-center cursor-pointer hover:bg-gray-100 px-1 py-0.5 rounded">
-          <span className="text-xs font-medium">{label}</span>
+        <Button variant="outline" size="sm" className="h-6 text-xs px-2">
+          {label}
           {(activeFilters[column]?.length || 0) > 0 && (
-            <Badge variant="secondary" className="ml-1 h-3 w-3 p-0 text-xs bg-blue-500 text-white">
+            <Badge variant="secondary" className="ml-1 h-3 w-3 p-0 text-xs">
               {activeFilters[column]?.length}
             </Badge>
           )}
-          <ChevronDown className="ml-1 h-3 w-3" />
-        </div>
+          <ChevronDown className="ml-1 h-2 w-2" />
+        </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="start" className="w-40 bg-white border shadow-lg z-50">
+      <DropdownMenuContent align="start" className="w-40">
         <DropdownMenuLabel className="text-xs">{label}</DropdownMenuLabel>
         <DropdownMenuSeparator />
         {values.map((value) => (
@@ -438,117 +440,187 @@ export default function ViewJobs() {
   );
 
   return (
-    <div className="h-full flex flex-col">
-      {/* Compact Header */}
-      <div className="px-4 py-2 border-b bg-white">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-4">
-            <h1 className="text-lg font-semibold">Daily Status Report ({filteredJobs.length})</h1>
-            <div className="relative">
-              <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-400 h-3 w-3" />
-              <Input
-                placeholder="Search..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-7 h-7 w-64 text-xs"
-              />
+    <div className="p-3 space-y-3 h-full">
+      <Card className="h-full">
+        <CardHeader className="pb-3">
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="flex items-center gap-2 text-lg">
+                <FileText className="h-4 w-4" />
+                All Jobs ({filteredJobs.length})
+              </CardTitle>
+              <CardDescription className="text-sm">
+                Manage logistics jobs with advanced filtering
+              </CardDescription>
+            </div>
+            <div className="flex items-center space-x-2">
+              <Button variant="outline" size="sm" onClick={clearFilters}>
+                Clear All
+              </Button>
+              <Button variant="outline" size="sm">
+                Export
+              </Button>
             </div>
           </div>
-          {/* Active Filters */}
-          {Object.keys(activeFilters).length > 0 && (
+        </CardHeader>
+        <CardContent className="p-3">
+          <div className="space-y-3">
+            {/* Search and Quick Actions */}
+            <div className="flex items-center space-x-2">
+              <div className="relative flex-1 max-w-sm">
+                <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-400 h-3 w-3" />
+                <Input
+                  placeholder="Search all fields..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-7 h-7 text-sm"
+                />
+              </div>
+            </div>
+
+            {/* Compact Filter Bar */}
             <div className="flex flex-wrap gap-1">
-              {Object.entries(activeFilters).map(([column, values]) =>
-                values.map((value) => (
-                  <Badge
-                    key={`${column}-${value}`}
-                    variant="secondary"
-                    className="text-xs h-5 px-2 bg-blue-100 text-blue-800"
-                  >
-                    {value}
-                    <X
-                      className="ml-1 h-2 w-2 cursor-pointer hover:text-red-500"
-                      onClick={() => toggleFilter(column, value)}
-                    />
-                  </Badge>
-                ))
-              )}
+              <FilterDropdown column="status" label="Status" values={columnFilters.status} />
+              <FilterDropdown column="modeOfShipment" label="Mode" values={columnFilters.modeOfShipment} />
+              <FilterDropdown column="shipmentType" label="Type" values={columnFilters.shipmentType} />
+              <FilterDropdown column="airShippingLine" label="Line" values={columnFilters.airShippingLine} />
+              <FilterDropdown column="finalDestination" label="Dest" values={columnFilters.finalDestination} />
+              <FilterDropdown column="portOfLoading" label="Port" values={columnFilters.portOfLoading} />
+              <FilterDropdown column="rmName" label="RM" values={columnFilters.rmName} />
+              <FilterDropdown column="terms" label="Terms" values={columnFilters.terms} />
+              <FilterDropdown column="lclFclAir" label="FCL/LCL" values={columnFilters.lclFclAir} />
+            </div>
+
+            {/* Active Filters */}
+            {Object.keys(activeFilters).length > 0 && (
+              <div className="flex flex-wrap gap-1">
+                {Object.entries(activeFilters).map(([column, values]) =>
+                  values.map((value) => (
+                    <Badge
+                      key={`${column}-${value}`}
+                      variant="secondary"
+                      className="text-xs h-5 px-2"
+                    >
+                      {value}
+                      <X
+                        className="ml-1 h-2 w-2 cursor-pointer hover:text-red-500"
+                        onClick={() => toggleFilter(column, value)}
+                      />
+                    </Badge>
+                  ))
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Optimized Table */}
+          <div className="rounded-md border mt-3 overflow-auto max-h-[calc(100vh-280px)]">
+            <Table>
+              <TableHeader className="sticky top-0 z-10">
+                <TableRow className="bg-slate-100 border-b-2">
+                  <TableHead className="font-semibold text-xs p-2 min-w-[110px]">Job Number</TableHead>
+                  <TableHead className="font-semibold text-xs p-2 min-w-[80px]">Booking</TableHead>
+                  <TableHead className="font-semibold text-xs p-2 min-w-[100px]">Line</TableHead>
+                  <TableHead className="font-semibold text-xs p-2 min-w-[140px]">Consignee</TableHead>
+                  <TableHead className="font-semibold text-xs p-2 min-w-[140px]">Shipper</TableHead>
+                  <TableHead className="font-semibold text-xs p-2 min-w-[60px]">Mode</TableHead>
+                  <TableHead className="font-semibold text-xs p-2 min-w-[60px]">Type</TableHead>
+                  <TableHead className="font-semibold text-xs p-2 min-w-[100px]">Container/Flight</TableHead>
+                  <TableHead className="font-semibold text-xs p-2 min-w-[100px]">POL</TableHead>
+                  <TableHead className="font-semibold text-xs p-2 min-w-[100px]">Destination</TableHead>
+                  <TableHead className="font-semibold text-xs p-2 min-w-[80px]">ETA</TableHead>
+                  <TableHead className="font-semibold text-xs p-2 min-w-[80px]">Gross Wt</TableHead>
+                  <TableHead className="font-semibold text-xs p-2 min-w-[80px]">Net Wt</TableHead>
+                  <TableHead className="font-semibold text-xs p-2 min-w-[100px]">Packages</TableHead>
+                  <TableHead className="font-semibold text-xs p-2 min-w-[120px]">HBL No</TableHead>
+                  <TableHead className="font-semibold text-xs p-2 min-w-[80px]">HBL Date</TableHead>
+                  <TableHead className="font-semibold text-xs p-2 min-w-[120px]">MBL No</TableHead>
+                  <TableHead className="font-semibold text-xs p-2 min-w-[80px]">MBL Date</TableHead>
+                  <TableHead className="font-semibold text-xs p-2 min-w-[140px]">Vessel/Voyage</TableHead>
+                  <TableHead className="font-semibold text-xs p-2 min-w-[140px]">Overseas Agent</TableHead>
+                  <TableHead className="font-semibold text-xs p-2 min-w-[100px]">RM Name</TableHead>
+                  <TableHead className="font-semibold text-xs p-2 min-w-[60px]">Terms</TableHead>
+                  <TableHead className="font-semibold text-xs p-2 min-w-[80px]">FCL/LCL</TableHead>
+                  <TableHead className="font-semibold text-xs p-2 min-w-[80px]">Invoice</TableHead>
+                  <TableHead className="font-semibold text-xs p-2 min-w-[120px]">Remarks</TableHead>
+                  <TableHead className="font-semibold text-xs p-2 min-w-[70px]">Status</TableHead>
+                  <TableHead className="font-semibold text-xs p-2 min-w-[80px]">Created</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filteredJobs.map((job) => (
+                  <TableRow key={job.id} className="hover:bg-gray-50 border-b">
+                    <TableCell className="font-medium text-blue-600 text-xs p-2">
+                      {job.jobNumber}
+                    </TableCell>
+                    <TableCell className="text-xs p-2">{job.bookingNo}</TableCell>
+                    <TableCell className="text-xs p-2">{job.airShippingLine}</TableCell>
+                    <TableCell className="text-xs p-2 max-w-[140px] truncate" title={job.consigneeDetails}>
+                      {job.consigneeDetails}
+                    </TableCell>
+                    <TableCell className="text-xs p-2 max-w-[140px] truncate" title={job.shipperDetails}>
+                      {job.shipperDetails}
+                    </TableCell>
+                    <TableCell className="text-xs p-2">{job.modeOfShipment}</TableCell>
+                    <TableCell className="text-xs p-2">{job.shipmentType}</TableCell>
+                    <TableCell className="text-xs p-2">{job.containerFlightNo}</TableCell>
+                    <TableCell className="text-xs p-2">{job.portOfLoading}</TableCell>
+                    <TableCell className="text-xs p-2">{job.finalDestination}</TableCell>
+                    <TableCell className="text-xs p-2">{job.etaPod}</TableCell>
+                    <TableCell className="text-xs p-2">{job.grossWeight}</TableCell>
+                    <TableCell className="text-xs p-2">{job.netWeight}</TableCell>
+                    <TableCell className="text-xs p-2">{job.totalPackages}</TableCell>
+                    <TableCell className="text-xs p-2">{job.hblNo}</TableCell>
+                    <TableCell className="text-xs p-2">{job.hblDate}</TableCell>
+                    <TableCell className="text-xs p-2">{job.mblNo}</TableCell>
+                    <TableCell className="text-xs p-2">{job.mblDate}</TableCell>
+                    <TableCell className="text-xs p-2 max-w-[140px] truncate" title={job.vesselVoyDetails}>
+                      {job.vesselVoyDetails}
+                    </TableCell>
+                    <TableCell className="text-xs p-2 max-w-[140px] truncate" title={job.overseasAgentDetails}>
+                      {job.overseasAgentDetails}
+                    </TableCell>
+                    <TableCell className="text-xs p-2">{job.rmName}</TableCell>
+                    <TableCell className="text-xs p-2">{job.terms}</TableCell>
+                    <TableCell className="text-xs p-2">{job.lclFclAir}</TableCell>
+                    <TableCell className="text-xs p-2">{job.invoiceNo}</TableCell>
+                    <TableCell className="text-xs p-2 max-w-[120px] truncate" title={job.remarks}>
+                      {job.remarks}
+                    </TableCell>
+                    <TableCell className="text-xs p-2">
+                      <Badge className={`${getStatusColor(job.status)} text-xs px-1 py-0`} variant="secondary">
+                        {job.status}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-xs p-2">{job.createdAt}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+
+          {filteredJobs.length === 0 && (
+            <div className="text-center py-8">
+              <p className="text-gray-500 text-sm">No jobs found matching your search criteria.</p>
             </div>
           )}
-        </div>
-      </div>
 
-      {/* Table Container - Takes up most of the space */}
-      <div className="flex-1 overflow-auto">
-        <Table>
-          <TableHeader className="sticky top-0 z-10 bg-gray-50">
-            <TableRow className="border-b-2">
-              <TableHead className="p-2 w-28">
-                <FilterDropdown column="rmName" label="RM" values={columnFilters.rmName} />
-              </TableHead>
-              <TableHead className="p-2 w-32">
-                <FilterDropdown column="jobNumber" label="Job Number" values={getUniqueValues('jobNumber')} />
-              </TableHead>
-              <TableHead className="p-2 w-24">
-                <FilterDropdown column="finalDestination" label="Final Dest" values={columnFilters.finalDestination} />
-              </TableHead>
-              <TableHead className="p-2 w-20">ETA</TableHead>
-              <TableHead className="p-2 w-24">Rollout</TableHead>
-              <TableHead className="p-2 w-20">Arrival</TableHead>
-              <TableHead className="p-2 w-20">
-                <FilterDropdown column="status" label="Status" values={columnFilters.status} />
-              </TableHead>
-              <TableHead className="p-2 w-20">BE No</TableHead>
-              <TableHead className="p-2 w-20">BE Dt</TableHead>
-              <TableHead className="p-2 w-48">Description</TableHead>
-              <TableHead className="p-2 w-20">Duty Amt</TableHead>
-              <TableHead className="p-2 w-20">Duty Pd</TableHead>
-              <TableHead className="p-2 w-20">Exam Dt</TableHead>
-              <TableHead className="p-2 w-28">Container No</TableHead>
-              <TableHead className="p-2 w-32">Remarks</TableHead>
-              <TableHead className="p-2 w-20">
-                <FilterDropdown column="lclFclAir" label="LCL/FCL" values={columnFilters.lclFclAir} />
-              </TableHead>
-              <TableHead className="p-2 w-20">Cnee Grp</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {filteredJobs.map((job) => (
-              <TableRow key={job.id} className="hover:bg-gray-50 border-b text-xs">
-                <TableCell className="p-1 font-medium">{job.rmName.split(' ')[0]}</TableCell>
-                <TableCell className="p-1 text-blue-600 font-medium">{job.jobNumber}</TableCell>
-                <TableCell className="p-1">{job.finalDestination}</TableCell>
-                <TableCell className="p-1">{job.etaPod}</TableCell>
-                <TableCell className="p-1">{job.mblDate}</TableCell>
-                <TableCell className="p-1">{job.hblDate}</TableCell>
-                <TableCell className="p-1">
-                  <Badge className={`${getStatusColor(job.status)} text-xs px-1 py-0`} variant="secondary">
-                    {job.status}
-                  </Badge>
-                </TableCell>
-                <TableCell className="p-1">{job.invoiceNo}</TableCell>
-                <TableCell className="p-1">{job.hblDate}</TableCell>
-                <TableCell className="p-1 max-w-48 truncate" title={job.shipperDetails + " - " + job.consigneeDetails}>
-                  {job.shipperDetails}
-                </TableCell>
-                <TableCell className="p-1">{job.grossWeight}</TableCell>
-                <TableCell className="p-1">{job.netWeight}</TableCell>
-                <TableCell className="p-1">{job.createdAt}</TableCell>
-                <TableCell className="p-1">{job.containerFlightNo}</TableCell>
-                <TableCell className="p-1 max-w-32 truncate" title={job.remarks}>
-                  {job.remarks}
-                </TableCell>
-                <TableCell className="p-1">{job.lclFclAir}</TableCell>
-                <TableCell className="p-1">{job.consigneeDetails.substring(0, 10)}</TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </div>
-
-      {/* Minimal Footer */}
-      <div className="px-4 py-1 border-t bg-white text-xs text-gray-600">
-        Showing {filteredJobs.length} of {jobs.length} records
-      </div>
+          {/* Compact Footer */}
+          <div className="flex items-center justify-between mt-2 text-xs">
+            <p className="text-gray-600">
+              Showing {filteredJobs.length} of {jobs.length} jobs
+            </p>
+            <div className="flex space-x-1">
+              <Button variant="outline" size="sm" disabled className="h-6 text-xs px-2">
+                Previous
+              </Button>
+              <Button variant="outline" size="sm" disabled className="h-6 text-xs px-2">
+                Next
+              </Button>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }
