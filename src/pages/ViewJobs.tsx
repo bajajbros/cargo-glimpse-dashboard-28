@@ -1,4 +1,3 @@
-
 import { useState, useMemo } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -21,7 +20,7 @@ import {
   DropdownMenuTrigger,
   DropdownMenuCheckboxItem,
 } from "@/components/ui/dropdown-menu";
-import { Search, FileText, Filter, ChevronDown } from "lucide-react";
+import { Search, FileText, Filter, ChevronDown, X } from "lucide-react";
 
 // Extended sample data with all fields
 const sampleJobs = [
@@ -413,24 +412,25 @@ export default function ViewJobs() {
   const FilterDropdown = ({ column, label, values }: { column: string; label: string; values: string[] }) => (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="outline" size="sm" className="h-8">
+        <Button variant="outline" size="sm" className="h-6 text-xs px-2">
           {label}
           {(activeFilters[column]?.length || 0) > 0 && (
-            <Badge variant="secondary" className="ml-1 h-4 w-4 p-0 text-xs">
+            <Badge variant="secondary" className="ml-1 h-3 w-3 p-0 text-xs">
               {activeFilters[column]?.length}
             </Badge>
           )}
-          <ChevronDown className="ml-1 h-3 w-3" />
+          <ChevronDown className="ml-1 h-2 w-2" />
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="start" className="w-48">
-        <DropdownMenuLabel>{label} Filters</DropdownMenuLabel>
+      <DropdownMenuContent align="start" className="w-40">
+        <DropdownMenuLabel className="text-xs">{label}</DropdownMenuLabel>
         <DropdownMenuSeparator />
         {values.map((value) => (
           <DropdownMenuCheckboxItem
             key={value}
             checked={activeFilters[column]?.includes(value) || false}
             onCheckedChange={() => toggleFilter(column, value)}
+            className="text-xs"
           >
             {value}
           </DropdownMenuCheckboxItem>
@@ -440,49 +440,58 @@ export default function ViewJobs() {
   );
 
   return (
-    <div className="p-6 space-y-6">
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <FileText className="h-5 w-5" />
-            All Jobs
-          </CardTitle>
-          <CardDescription>
-            View and manage all logistics jobs with advanced filtering
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
+    <div className="p-3 space-y-3 h-full">
+      <Card className="h-full">
+        <CardHeader className="pb-3">
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="flex items-center gap-2 text-lg">
+                <FileText className="h-4 w-4" />
+                All Jobs ({filteredJobs.length})
+              </CardTitle>
+              <CardDescription className="text-sm">
+                Manage logistics jobs with advanced filtering
+              </CardDescription>
+            </div>
             <div className="flex items-center space-x-2">
-              <div className="relative flex-1 max-w-md">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+              <Button variant="outline" size="sm" onClick={clearFilters}>
+                Clear All
+              </Button>
+              <Button variant="outline" size="sm">
+                Export
+              </Button>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent className="p-3">
+          <div className="space-y-3">
+            {/* Search and Quick Actions */}
+            <div className="flex items-center space-x-2">
+              <div className="relative flex-1 max-w-sm">
+                <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-400 h-3 w-3" />
                 <Input
                   placeholder="Search all fields..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10"
+                  className="pl-7 h-7 text-sm"
                 />
               </div>
-              <Button variant="outline" onClick={clearFilters}>
-                Clear Filters
-              </Button>
-              <Button variant="outline">
-                Export
-              </Button>
             </div>
 
-            <div className="flex flex-wrap gap-2">
+            {/* Compact Filter Bar */}
+            <div className="flex flex-wrap gap-1">
               <FilterDropdown column="status" label="Status" values={columnFilters.status} />
               <FilterDropdown column="modeOfShipment" label="Mode" values={columnFilters.modeOfShipment} />
               <FilterDropdown column="shipmentType" label="Type" values={columnFilters.shipmentType} />
-              <FilterDropdown column="airShippingLine" label="Shipping Line" values={columnFilters.airShippingLine} />
-              <FilterDropdown column="finalDestination" label="Destination" values={columnFilters.finalDestination} />
+              <FilterDropdown column="airShippingLine" label="Line" values={columnFilters.airShippingLine} />
+              <FilterDropdown column="finalDestination" label="Dest" values={columnFilters.finalDestination} />
               <FilterDropdown column="portOfLoading" label="Port" values={columnFilters.portOfLoading} />
-              <FilterDropdown column="rmName" label="RM Name" values={columnFilters.rmName} />
+              <FilterDropdown column="rmName" label="RM" values={columnFilters.rmName} />
               <FilterDropdown column="terms" label="Terms" values={columnFilters.terms} />
-              <FilterDropdown column="lclFclAir" label="LCL/FCL/Air" values={columnFilters.lclFclAir} />
+              <FilterDropdown column="lclFclAir" label="FCL/LCL" values={columnFilters.lclFclAir} />
             </div>
 
+            {/* Active Filters */}
             {Object.keys(activeFilters).length > 0 && (
               <div className="flex flex-wrap gap-1">
                 {Object.entries(activeFilters).map(([column, values]) =>
@@ -490,15 +499,13 @@ export default function ViewJobs() {
                     <Badge
                       key={`${column}-${value}`}
                       variant="secondary"
-                      className="text-xs"
+                      className="text-xs h-5 px-2"
                     >
-                      {column}: {value}
-                      <button
-                        className="ml-1 hover:text-red-500"
+                      {value}
+                      <X
+                        className="ml-1 h-2 w-2 cursor-pointer hover:text-red-500"
                         onClick={() => toggleFilter(column, value)}
-                      >
-                        ×
-                      </button>
+                      />
                     </Badge>
                   ))
                 )}
@@ -506,85 +513,86 @@ export default function ViewJobs() {
             )}
           </div>
 
-          <div className="rounded-md border mt-4 overflow-x-auto">
+          {/* Optimized Table */}
+          <div className="rounded-md border mt-3 overflow-auto max-h-[calc(100vh-280px)]">
             <Table>
-              <TableHeader>
-                <TableRow className="bg-blue-50">
-                  <TableHead className="font-semibold min-w-[120px]">Job Number</TableHead>
-                  <TableHead className="font-semibold min-w-[100px]">Booking No</TableHead>
-                  <TableHead className="font-semibold min-w-[120px]">Shipping Line</TableHead>
-                  <TableHead className="font-semibold min-w-[180px]">Consignee</TableHead>
-                  <TableHead className="font-semibold min-w-[180px]">Shipper</TableHead>
-                  <TableHead className="font-semibold min-w-[80px]">Mode</TableHead>
-                  <TableHead className="font-semibold min-w-[80px]">Type</TableHead>
-                  <TableHead className="font-semibold min-w-[120px]">Container/Flight</TableHead>
-                  <TableHead className="font-semibold min-w-[120px]">Port of Loading</TableHead>
-                  <TableHead className="font-semibold min-w-[120px]">Final Destination</TableHead>
-                  <TableHead className="font-semibold min-w-[100px]">ETA POD</TableHead>
-                  <TableHead className="font-semibold min-w-[100px]">Gross Weight</TableHead>
-                  <TableHead className="font-semibold min-w-[100px]">Net Weight</TableHead>
-                  <TableHead className="font-semibold min-w-[120px]">Total Packages</TableHead>
-                  <TableHead className="font-semibold min-w-[120px]">HBL No</TableHead>
-                  <TableHead className="font-semibold min-w-[100px]">HBL Date</TableHead>
-                  <TableHead className="font-semibold min-w-[120px]">MBL No</TableHead>
-                  <TableHead className="font-semibold min-w-[100px]">MBL Date</TableHead>
-                  <TableHead className="font-semibold min-w-[180px]">Vessel/Voyage</TableHead>
-                  <TableHead className="font-semibold min-w-[180px]">Overseas Agent</TableHead>
-                  <TableHead className="font-semibold min-w-[100px]">RM Name</TableHead>
-                  <TableHead className="font-semibold min-w-[80px]">Terms</TableHead>
-                  <TableHead className="font-semibold min-w-[100px]">LCL/FCL/Air</TableHead>
-                  <TableHead className="font-semibold min-w-[100px]">Invoice No</TableHead>
-                  <TableHead className="font-semibold min-w-[150px]">Remarks</TableHead>
-                  <TableHead className="font-semibold min-w-[80px]">Status</TableHead>
-                  <TableHead className="font-semibold min-w-[100px]">Created</TableHead>
+              <TableHeader className="sticky top-0 z-10">
+                <TableRow className="bg-slate-100 border-b-2">
+                  <TableHead className="font-semibold text-xs p-2 min-w-[110px]">Job Number</TableHead>
+                  <TableHead className="font-semibold text-xs p-2 min-w-[80px]">Booking</TableHead>
+                  <TableHead className="font-semibold text-xs p-2 min-w-[100px]">Line</TableHead>
+                  <TableHead className="font-semibold text-xs p-2 min-w-[140px]">Consignee</TableHead>
+                  <TableHead className="font-semibold text-xs p-2 min-w-[140px]">Shipper</TableHead>
+                  <TableHead className="font-semibold text-xs p-2 min-w-[60px]">Mode</TableHead>
+                  <TableHead className="font-semibold text-xs p-2 min-w-[60px]">Type</TableHead>
+                  <TableHead className="font-semibold text-xs p-2 min-w-[100px]">Container/Flight</TableHead>
+                  <TableHead className="font-semibold text-xs p-2 min-w-[100px]">POL</TableHead>
+                  <TableHead className="font-semibold text-xs p-2 min-w-[100px]">Destination</TableHead>
+                  <TableHead className="font-semibold text-xs p-2 min-w-[80px]">ETA</TableHead>
+                  <TableHead className="font-semibold text-xs p-2 min-w-[80px]">Gross Wt</TableHead>
+                  <TableHead className="font-semibold text-xs p-2 min-w-[80px]">Net Wt</TableHead>
+                  <TableHead className="font-semibold text-xs p-2 min-w-[100px]">Packages</TableHead>
+                  <TableHead className="font-semibold text-xs p-2 min-w-[120px]">HBL No</TableHead>
+                  <TableHead className="font-semibold text-xs p-2 min-w-[80px]">HBL Date</TableHead>
+                  <TableHead className="font-semibold text-xs p-2 min-w-[120px]">MBL No</TableHead>
+                  <TableHead className="font-semibold text-xs p-2 min-w-[80px]">MBL Date</TableHead>
+                  <TableHead className="font-semibold text-xs p-2 min-w-[140px]">Vessel/Voyage</TableHead>
+                  <TableHead className="font-semibold text-xs p-2 min-w-[140px]">Overseas Agent</TableHead>
+                  <TableHead className="font-semibold text-xs p-2 min-w-[100px]">RM Name</TableHead>
+                  <TableHead className="font-semibold text-xs p-2 min-w-[60px]">Terms</TableHead>
+                  <TableHead className="font-semibold text-xs p-2 min-w-[80px]">FCL/LCL</TableHead>
+                  <TableHead className="font-semibold text-xs p-2 min-w-[80px]">Invoice</TableHead>
+                  <TableHead className="font-semibold text-xs p-2 min-w-[120px]">Remarks</TableHead>
+                  <TableHead className="font-semibold text-xs p-2 min-w-[70px]">Status</TableHead>
+                  <TableHead className="font-semibold text-xs p-2 min-w-[80px]">Created</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {filteredJobs.map((job) => (
-                  <TableRow key={job.id} className="hover:bg-gray-50">
-                    <TableCell className="font-medium text-blue-600">
+                  <TableRow key={job.id} className="hover:bg-gray-50 border-b">
+                    <TableCell className="font-medium text-blue-600 text-xs p-2">
                       {job.jobNumber}
                     </TableCell>
-                    <TableCell>{job.bookingNo}</TableCell>
-                    <TableCell>{job.airShippingLine}</TableCell>
-                    <TableCell className="max-w-[180px] truncate">
+                    <TableCell className="text-xs p-2">{job.bookingNo}</TableCell>
+                    <TableCell className="text-xs p-2">{job.airShippingLine}</TableCell>
+                    <TableCell className="text-xs p-2 max-w-[140px] truncate" title={job.consigneeDetails}>
                       {job.consigneeDetails}
                     </TableCell>
-                    <TableCell className="max-w-[180px] truncate">
+                    <TableCell className="text-xs p-2 max-w-[140px] truncate" title={job.shipperDetails}>
                       {job.shipperDetails}
                     </TableCell>
-                    <TableCell>{job.modeOfShipment}</TableCell>
-                    <TableCell>{job.shipmentType}</TableCell>
-                    <TableCell>{job.containerFlightNo}</TableCell>
-                    <TableCell>{job.portOfLoading}</TableCell>
-                    <TableCell>{job.finalDestination}</TableCell>
-                    <TableCell>{job.etaPod}</TableCell>
-                    <TableCell>{job.grossWeight}</TableCell>
-                    <TableCell>{job.netWeight}</TableCell>
-                    <TableCell>{job.totalPackages}</TableCell>
-                    <TableCell>{job.hblNo}</TableCell>
-                    <TableCell>{job.hblDate}</TableCell>
-                    <TableCell>{job.mblNo}</TableCell>
-                    <TableCell>{job.mblDate}</TableCell>
-                    <TableCell className="max-w-[180px] truncate">
+                    <TableCell className="text-xs p-2">{job.modeOfShipment}</TableCell>
+                    <TableCell className="text-xs p-2">{job.shipmentType}</TableCell>
+                    <TableCell className="text-xs p-2">{job.containerFlightNo}</TableCell>
+                    <TableCell className="text-xs p-2">{job.portOfLoading}</TableCell>
+                    <TableCell className="text-xs p-2">{job.finalDestination}</TableCell>
+                    <TableCell className="text-xs p-2">{job.etaPod}</TableCell>
+                    <TableCell className="text-xs p-2">{job.grossWeight}</TableCell>
+                    <TableCell className="text-xs p-2">{job.netWeight}</TableCell>
+                    <TableCell className="text-xs p-2">{job.totalPackages}</TableCell>
+                    <TableCell className="text-xs p-2">{job.hblNo}</TableCell>
+                    <TableCell className="text-xs p-2">{job.hblDate}</TableCell>
+                    <TableCell className="text-xs p-2">{job.mblNo}</TableCell>
+                    <TableCell className="text-xs p-2">{job.mblDate}</TableCell>
+                    <TableCell className="text-xs p-2 max-w-[140px] truncate" title={job.vesselVoyDetails}>
                       {job.vesselVoyDetails}
                     </TableCell>
-                    <TableCell className="max-w-[180px] truncate">
+                    <TableCell className="text-xs p-2 max-w-[140px] truncate" title={job.overseasAgentDetails}>
                       {job.overseasAgentDetails}
                     </TableCell>
-                    <TableCell>{job.rmName}</TableCell>
-                    <TableCell>{job.terms}</TableCell>
-                    <TableCell>{job.lclFclAir}</TableCell>
-                    <TableCell>{job.invoiceNo}</TableCell>
-                    <TableCell className="max-w-[150px] truncate">
+                    <TableCell className="text-xs p-2">{job.rmName}</TableCell>
+                    <TableCell className="text-xs p-2">{job.terms}</TableCell>
+                    <TableCell className="text-xs p-2">{job.lclFclAir}</TableCell>
+                    <TableCell className="text-xs p-2">{job.invoiceNo}</TableCell>
+                    <TableCell className="text-xs p-2 max-w-[120px] truncate" title={job.remarks}>
                       {job.remarks}
                     </TableCell>
-                    <TableCell>
-                      <Badge className={getStatusColor(job.status)} variant="secondary">
+                    <TableCell className="text-xs p-2">
+                      <Badge className={`${getStatusColor(job.status)} text-xs px-1 py-0`} variant="secondary">
                         {job.status}
                       </Badge>
                     </TableCell>
-                    <TableCell>{job.createdAt}</TableCell>
+                    <TableCell className="text-xs p-2">{job.createdAt}</TableCell>
                   </TableRow>
                 ))}
               </TableBody>
@@ -593,19 +601,20 @@ export default function ViewJobs() {
 
           {filteredJobs.length === 0 && (
             <div className="text-center py-8">
-              <p className="text-gray-500">No jobs found matching your search criteria.</p>
+              <p className="text-gray-500 text-sm">No jobs found matching your search criteria.</p>
             </div>
           )}
 
-          <div className="flex items-center justify-between mt-4">
-            <p className="text-sm text-gray-600">
+          {/* Compact Footer */}
+          <div className="flex items-center justify-between mt-2 text-xs">
+            <p className="text-gray-600">
               Showing {filteredJobs.length} of {jobs.length} jobs
             </p>
-            <div className="flex space-x-2">
-              <Button variant="outline" size="sm" disabled>
+            <div className="flex space-x-1">
+              <Button variant="outline" size="sm" disabled className="h-6 text-xs px-2">
                 Previous
               </Button>
-              <Button variant="outline" size="sm" disabled>
+              <Button variant="outline" size="sm" disabled className="h-6 text-xs px-2">
                 Next
               </Button>
             </div>

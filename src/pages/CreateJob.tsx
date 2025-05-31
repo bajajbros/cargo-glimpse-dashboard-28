@@ -1,137 +1,172 @@
 
 import { useState } from "react";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import * as z from "zod";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Calendar } from "@/components/ui/calendar";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { CalendarIcon } from "lucide-react";
-import { format } from "date-fns";
-import { cn } from "@/lib/utils";
+import { Textarea } from "@/components/ui/textarea";
+import { Badge } from "@/components/ui/badge";
+import { CalendarIcon, Plus, Save } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
-const jobSchema = z.object({
-  airShippingLine: z.string().min(1, "Air Shipping Line is required"),
-  bookingNo: z.string().min(1, "Booking Number is required"),
-  consigneeDetails: z.string().min(1, "Consignee Details are required"),
-  containerFlightNo: z.string().min(1, "Container/Flight Number is required"),
-  etaPod: z.string().min(1, "ETA POD is required"),
-  finalDestination: z.string().min(1, "Final Destination is required"),
-  grossWeight: z.string().min(1, "Gross Weight is required"),
-  hblNo: z.string().min(1, "HBL Number is required"),
-  invoiceNo: z.string().min(1, "Invoice Number is required"),
-  jobNumber: z.string().min(1, "Job Number is required"),
-  lclFclAir: z.string(),
-  mblNo: z.string().min(1, "MBL Number is required"),
-  modeOfShipment: z.string().min(1, "Mode of Shipment is required"),
-  netWeight: z.string().min(1, "Net Weight is required"),
-  overseasAgentDetails: z.string().min(1, "Overseas Agent Details are required"),
-  portOfLoading: z.string().min(1, "Port of Loading is required"),
-  remarks: z.string(),
-  rmName: z.string().min(1, "RM Name is required"),
-  shipmentType: z.string().min(1, "Shipment Type is required"),
-  shipperDetails: z.string().min(1, "Shipper Details are required"),
-  status: z.string().min(1, "Status is required"),
-  terms: z.string().min(1, "Terms are required"),
-  totalPackages: z.string().min(1, "Total Packages is required"),
-  vesselVoyDetails: z.string().min(1, "Vessel/Voyage Details are required"),
-});
-
-type JobFormData = z.infer<typeof jobSchema>;
-
 export default function CreateJob() {
-  const [hblDate, setHblDate] = useState<Date>();
-  const [mblDate, setMblDate] = useState<Date>();
   const { toast } = useToast();
-
-  const {
-    register,
-    handleSubmit,
-    setValue,
-    watch,
-    formState: { errors },
-    reset,
-  } = useForm<JobFormData>({
-    resolver: zodResolver(jobSchema),
-    defaultValues: {
-      status: "Active",
-      modeOfShipment: "Sea",
-      shipmentType: "Import",
-    }
+  const [formData, setFormData] = useState({
+    airShippingLine: "",
+    bookingNo: "",
+    consigneeDetails: "",
+    containerFlightNo: "",
+    etaPod: "",
+    finalDestination: "",
+    grossWeight: "",
+    hblDate: "",
+    hblNo: "",
+    invoiceNo: "",
+    jobNumber: "",
+    lclFclAir: "",
+    mblDate: "",
+    mblNo: "",
+    modeOfShipment: "",
+    netWeight: "",
+    overseasAgentDetails: "",
+    portOfLoading: "",
+    remarks: "",
+    rmName: "",
+    shipmentType: "",
+    shipperDetails: "",
+    status: "",
+    terms: "",
+    totalPackages: "",
+    vesselVoyDetails: "",
   });
 
-  const onSubmit = (data: JobFormData) => {
-    console.log("Form submitted:", { ...data, hblDate, mblDate });
+  const handleInputChange = (field: string, value: string) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    console.log("Form submitted:", formData);
     toast({
       title: "Job Created Successfully",
-      description: `Job ${data.jobNumber} has been created.`,
+      description: `Job ${formData.jobNumber || 'New Job'} has been created.`,
     });
-    reset();
-    setHblDate(undefined);
-    setMblDate(undefined);
+    
+    // Reset form
+    setFormData({
+      airShippingLine: "",
+      bookingNo: "",
+      consigneeDetails: "",
+      containerFlightNo: "",
+      etaPod: "",
+      finalDestination: "",
+      grossWeight: "",
+      hblDate: "",
+      hblNo: "",
+      invoiceNo: "",
+      jobNumber: "",
+      lclFclAir: "",
+      mblDate: "",
+      mblNo: "",
+      modeOfShipment: "",
+      netWeight: "",
+      overseasAgentDetails: "",
+      portOfLoading: "",
+      remarks: "",
+      rmName: "",
+      shipmentType: "",
+      shipperDetails: "",
+      status: "",
+      terms: "",
+      totalPackages: "",
+      vesselVoyDetails: "",
+    });
   };
 
   return (
-    <div className="p-4 h-full overflow-y-auto">
+    <div className="p-3 h-full overflow-auto">
       <Card className="max-w-7xl mx-auto">
-        <CardHeader className="pb-4">
-          <CardTitle className="text-xl">Create New Job</CardTitle>
-          <CardDescription>
-            Fill in the details below to create a new logistics job
-          </CardDescription>
+        <CardHeader className="pb-3">
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="flex items-center gap-2 text-lg">
+                <Plus className="h-4 w-4" />
+                Create New Job
+              </CardTitle>
+              <CardDescription className="text-sm">
+                Enter job details for logistics management
+              </CardDescription>
+            </div>
+            <Badge variant="outline" className="text-xs">
+              Draft
+            </Badge>
+          </div>
         </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-              {/* Job Information */}
+        <CardContent className="p-4">
+          <form onSubmit={handleSubmit} className="space-y-4">
+            {/* Grid Layout for Maximum Space Utilization */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+              {/* Row 1 */}
               <div className="space-y-1">
-                <Label htmlFor="jobNumber" className="text-xs font-medium">Job Number *</Label>
+                <Label htmlFor="jobNumber" className="text-xs font-medium">Job Number</Label>
                 <Input
                   id="jobNumber"
-                  {...register("jobNumber")}
+                  value={formData.jobNumber}
+                  onChange={(e) => handleInputChange("jobNumber", e.target.value)}
                   placeholder="FF-10010/25-26"
                   className="h-8 text-sm"
                 />
-                {errors.jobNumber && (
-                  <p className="text-xs text-red-500">{errors.jobNumber.message}</p>
-                )}
               </div>
-
               <div className="space-y-1">
-                <Label htmlFor="bookingNo" className="text-xs font-medium">Booking Number *</Label>
+                <Label htmlFor="bookingNo" className="text-xs font-medium">Booking Number</Label>
                 <Input
                   id="bookingNo"
-                  {...register("bookingNo")}
+                  value={formData.bookingNo}
+                  onChange={(e) => handleInputChange("bookingNo", e.target.value)}
                   placeholder="3426"
                   className="h-8 text-sm"
                 />
-                {errors.bookingNo && (
-                  <p className="text-xs text-red-500">{errors.bookingNo.message}</p>
-                )}
               </div>
-
               <div className="space-y-1">
-                <Label htmlFor="invoiceNo" className="text-xs font-medium">Invoice Number *</Label>
+                <Label htmlFor="invoiceNo" className="text-xs font-medium">Invoice Number</Label>
                 <Input
                   id="invoiceNo"
-                  {...register("invoiceNo")}
+                  value={formData.invoiceNo}
+                  onChange={(e) => handleInputChange("invoiceNo", e.target.value)}
                   placeholder="3426"
                   className="h-8 text-sm"
                 />
-                {errors.invoiceNo && (
-                  <p className="text-xs text-red-500">{errors.invoiceNo.message}</p>
-                )}
+              </div>
+              <div className="space-y-1">
+                <Label htmlFor="status" className="text-xs font-medium">Status</Label>
+                <Select value={formData.status} onValueChange={(value) => handleInputChange("status", value)}>
+                  <SelectTrigger className="h-8 text-sm">
+                    <SelectValue placeholder="Select status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Active">Active</SelectItem>
+                    <SelectItem value="Pending">Pending</SelectItem>
+                    <SelectItem value="Completed">Completed</SelectItem>
+                    <SelectItem value="Cancelled">Cancelled</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
 
+              {/* Row 2 */}
               <div className="space-y-1">
-                <Label htmlFor="modeOfShipment" className="text-xs font-medium">Mode of Shipment *</Label>
-                <Select onValueChange={(value) => setValue("modeOfShipment", value)} defaultValue="Sea">
+                <Label htmlFor="airShippingLine" className="text-xs font-medium">Air/Shipping Line</Label>
+                <Input
+                  id="airShippingLine"
+                  value={formData.airShippingLine}
+                  onChange={(e) => handleInputChange("airShippingLine", e.target.value)}
+                  placeholder="ONE"
+                  className="h-8 text-sm"
+                />
+              </div>
+              <div className="space-y-1">
+                <Label htmlFor="modeOfShipment" className="text-xs font-medium">Mode of Shipment</Label>
+                <Select value={formData.modeOfShipment} onValueChange={(value) => handleInputChange("modeOfShipment", value)}>
                   <SelectTrigger className="h-8 text-sm">
                     <SelectValue placeholder="Select mode" />
                   </SelectTrigger>
@@ -139,16 +174,13 @@ export default function CreateJob() {
                     <SelectItem value="Sea">Sea</SelectItem>
                     <SelectItem value="Air">Air</SelectItem>
                     <SelectItem value="Road">Road</SelectItem>
+                    <SelectItem value="Rail">Rail</SelectItem>
                   </SelectContent>
                 </Select>
-                {errors.modeOfShipment && (
-                  <p className="text-xs text-red-500">{errors.modeOfShipment.message}</p>
-                )}
               </div>
-
               <div className="space-y-1">
-                <Label htmlFor="shipmentType" className="text-xs font-medium">Shipment Type *</Label>
-                <Select onValueChange={(value) => setValue("shipmentType", value)} defaultValue="Import">
+                <Label htmlFor="shipmentType" className="text-xs font-medium">Shipment Type</Label>
+                <Select value={formData.shipmentType} onValueChange={(value) => handleInputChange("shipmentType", value)}>
                   <SelectTrigger className="h-8 text-sm">
                     <SelectValue placeholder="Select type" />
                   </SelectTrigger>
@@ -157,27 +189,10 @@ export default function CreateJob() {
                     <SelectItem value="Export">Export</SelectItem>
                   </SelectContent>
                 </Select>
-                {errors.shipmentType && (
-                  <p className="text-xs text-red-500">{errors.shipmentType.message}</p>
-                )}
               </div>
-
-              <div className="space-y-1">
-                <Label htmlFor="airShippingLine" className="text-xs font-medium">Air/Shipping Line *</Label>
-                <Input
-                  id="airShippingLine"
-                  {...register("airShippingLine")}
-                  placeholder="ONE"
-                  className="h-8 text-sm"
-                />
-                {errors.airShippingLine && (
-                  <p className="text-xs text-red-500">{errors.airShippingLine.message}</p>
-                )}
-              </div>
-
               <div className="space-y-1">
                 <Label htmlFor="lclFclAir" className="text-xs font-medium">LCL/FCL/Air</Label>
-                <Select onValueChange={(value) => setValue("lclFclAir", value)}>
+                <Select value={formData.lclFclAir} onValueChange={(value) => handleInputChange("lclFclAir", value)}>
                   <SelectTrigger className="h-8 text-sm">
                     <SelectValue placeholder="Select option" />
                   </SelectTrigger>
@@ -189,296 +204,210 @@ export default function CreateJob() {
                 </Select>
               </div>
 
+              {/* Row 3 */}
               <div className="space-y-1">
-                <Label htmlFor="containerFlightNo" className="text-xs font-medium">Container/Flight Number *</Label>
+                <Label htmlFor="containerFlightNo" className="text-xs font-medium">Container/Flight No</Label>
                 <Input
                   id="containerFlightNo"
-                  {...register("containerFlightNo")}
+                  value={formData.containerFlightNo}
+                  onChange={(e) => handleInputChange("containerFlightNo", e.target.value)}
                   placeholder="ONEU0044026"
                   className="h-8 text-sm"
                 />
-                {errors.containerFlightNo && (
-                  <p className="text-xs text-red-500">{errors.containerFlightNo.message}</p>
-                )}
               </div>
-
               <div className="space-y-1">
-                <Label htmlFor="vesselVoyDetails" className="text-xs font-medium">Vessel/Voyage Details *</Label>
-                <Input
-                  id="vesselVoyDetails"
-                  {...register("vesselVoyDetails")}
-                  placeholder="EVER EAGLE - 188W"
-                  className="h-8 text-sm"
-                />
-                {errors.vesselVoyDetails && (
-                  <p className="text-xs text-red-500">{errors.vesselVoyDetails.message}</p>
-                )}
-              </div>
-
-              <div className="space-y-1">
-                <Label htmlFor="grossWeight" className="text-xs font-medium">Gross Weight *</Label>
-                <Input
-                  id="grossWeight"
-                  {...register("grossWeight")}
-                  placeholder="10148.00"
-                  className="h-8 text-sm"
-                />
-                {errors.grossWeight && (
-                  <p className="text-xs text-red-500">{errors.grossWeight.message}</p>
-                )}
-              </div>
-
-              <div className="space-y-1">
-                <Label htmlFor="netWeight" className="text-xs font-medium">Net Weight *</Label>
-                <Input
-                  id="netWeight"
-                  {...register("netWeight")}
-                  placeholder="9800"
-                  className="h-8 text-sm"
-                />
-                {errors.netWeight && (
-                  <p className="text-xs text-red-500">{errors.netWeight.message}</p>
-                )}
-              </div>
-
-              <div className="space-y-1">
-                <Label htmlFor="totalPackages" className="text-xs font-medium">Total Packages *</Label>
-                <Input
-                  id="totalPackages"
-                  {...register("totalPackages")}
-                  placeholder="15 PLTS"
-                  className="h-8 text-sm"
-                />
-                {errors.totalPackages && (
-                  <p className="text-xs text-red-500">{errors.totalPackages.message}</p>
-                )}
-              </div>
-
-              <div className="space-y-1">
-                <Label htmlFor="hblNo" className="text-xs font-medium">HBL Number *</Label>
-                <Input
-                  id="hblNo"
-                  {...register("hblNo")}
-                  placeholder="TPENDL25040858"
-                  className="h-8 text-sm"
-                />
-                {errors.hblNo && (
-                  <p className="text-xs text-red-500">{errors.hblNo.message}</p>
-                )}
-              </div>
-
-              <div className="space-y-1">
-                <Label className="text-xs font-medium">HBL Date</Label>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant="outline"
-                      className={cn(
-                        "w-full justify-start text-left font-normal h-8 text-sm",
-                        !hblDate && "text-muted-foreground"
-                      )}
-                    >
-                      <CalendarIcon className="mr-2 h-3 w-3" />
-                      {hblDate ? format(hblDate, "PPP") : <span>Pick a date</span>}
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0" align="start">
-                    <Calendar
-                      mode="single"
-                      selected={hblDate}
-                      onSelect={setHblDate}
-                      initialFocus
-                      className="p-3"
-                    />
-                  </PopoverContent>
-                </Popover>
-              </div>
-
-              <div className="space-y-1">
-                <Label htmlFor="mblNo" className="text-xs font-medium">MBL Number *</Label>
-                <Input
-                  id="mblNo"
-                  {...register("mblNo")}
-                  placeholder="ONEYTPEF2627600"
-                  className="h-8 text-sm"
-                />
-                {errors.mblNo && (
-                  <p className="text-xs text-red-500">{errors.mblNo.message}</p>
-                )}
-              </div>
-
-              <div className="space-y-1">
-                <Label className="text-xs font-medium">MBL Date</Label>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant="outline"
-                      className={cn(
-                        "w-full justify-start text-left font-normal h-8 text-sm",
-                        !mblDate && "text-muted-foreground"
-                      )}
-                    >
-                      <CalendarIcon className="mr-2 h-3 w-3" />
-                      {mblDate ? format(mblDate, "PPP") : <span>Pick a date</span>}
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0" align="start">
-                    <Calendar
-                      mode="single"
-                      selected={mblDate}
-                      onSelect={setMblDate}
-                      initialFocus
-                      className="p-3"
-                    />
-                  </PopoverContent>
-                </Popover>
-              </div>
-
-              <div className="space-y-1">
-                <Label htmlFor="portOfLoading" className="text-xs font-medium">Port of Loading *</Label>
+                <Label htmlFor="portOfLoading" className="text-xs font-medium">Port of Loading</Label>
                 <Input
                   id="portOfLoading"
-                  {...register("portOfLoading")}
+                  value={formData.portOfLoading}
+                  onChange={(e) => handleInputChange("portOfLoading", e.target.value)}
                   placeholder="KAOHSIUNG"
                   className="h-8 text-sm"
                 />
-                {errors.portOfLoading && (
-                  <p className="text-xs text-red-500">{errors.portOfLoading.message}</p>
-                )}
               </div>
-
               <div className="space-y-1">
-                <Label htmlFor="finalDestination" className="text-xs font-medium">Final Destination *</Label>
+                <Label htmlFor="finalDestination" className="text-xs font-medium">Final Destination</Label>
                 <Input
                   id="finalDestination"
-                  {...register("finalDestination")}
+                  value={formData.finalDestination}
+                  onChange={(e) => handleInputChange("finalDestination", e.target.value)}
                   placeholder="ICD TKD"
                   className="h-8 text-sm"
                 />
-                {errors.finalDestination && (
-                  <p className="text-xs text-red-500">{errors.finalDestination.message}</p>
-                )}
               </div>
-
               <div className="space-y-1">
-                <Label htmlFor="etaPod" className="text-xs font-medium">ETA POD *</Label>
+                <Label htmlFor="etaPod" className="text-xs font-medium">ETA POD</Label>
                 <Input
                   id="etaPod"
-                  {...register("etaPod")}
-                  placeholder="25/04/2025"
+                  type="date"
+                  value={formData.etaPod}
+                  onChange={(e) => handleInputChange("etaPod", e.target.value)}
                   className="h-8 text-sm"
                 />
-                {errors.etaPod && (
-                  <p className="text-xs text-red-500">{errors.etaPod.message}</p>
-                )}
               </div>
 
+              {/* Row 4 */}
               <div className="space-y-1">
-                <Label htmlFor="rmName" className="text-xs font-medium">RM Name *</Label>
+                <Label htmlFor="grossWeight" className="text-xs font-medium">Gross Weight</Label>
                 <Input
-                  id="rmName"
-                  {...register("rmName")}
-                  placeholder="Manish Kumar (manish.kumar)"
+                  id="grossWeight"
+                  value={formData.grossWeight}
+                  onChange={(e) => handleInputChange("grossWeight", e.target.value)}
+                  placeholder="10148.00"
                   className="h-8 text-sm"
                 />
-                {errors.rmName && (
-                  <p className="text-xs text-red-500">{errors.rmName.message}</p>
-                )}
               </div>
-
               <div className="space-y-1">
-                <Label htmlFor="terms" className="text-xs font-medium">Terms *</Label>
+                <Label htmlFor="netWeight" className="text-xs font-medium">Net Weight</Label>
                 <Input
-                  id="terms"
-                  {...register("terms")}
-                  placeholder="FOB"
+                  id="netWeight"
+                  value={formData.netWeight}
+                  onChange={(e) => handleInputChange("netWeight", e.target.value)}
+                  placeholder="9800"
                   className="h-8 text-sm"
                 />
-                {errors.terms && (
-                  <p className="text-xs text-red-500">{errors.terms.message}</p>
-                )}
               </div>
-
               <div className="space-y-1">
-                <Label htmlFor="status" className="text-xs font-medium">Status *</Label>
-                <Select onValueChange={(value) => setValue("status", value)} defaultValue="Active">
+                <Label htmlFor="totalPackages" className="text-xs font-medium">Total Packages</Label>
+                <Input
+                  id="totalPackages"
+                  value={formData.totalPackages}
+                  onChange={(e) => handleInputChange("totalPackages", e.target.value)}
+                  placeholder="15 PLTS"
+                  className="h-8 text-sm"
+                />
+              </div>
+              <div className="space-y-1">
+                <Label htmlFor="terms" className="text-xs font-medium">Terms</Label>
+                <Select value={formData.terms} onValueChange={(value) => handleInputChange("terms", value)}>
                   <SelectTrigger className="h-8 text-sm">
-                    <SelectValue placeholder="Select status" />
+                    <SelectValue placeholder="Select terms" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="Active">Active</SelectItem>
-                    <SelectItem value="Completed">Completed</SelectItem>
-                    <SelectItem value="Pending">Pending</SelectItem>
-                    <SelectItem value="Cancelled">Cancelled</SelectItem>
+                    <SelectItem value="FOB">FOB</SelectItem>
+                    <SelectItem value="CIF">CIF</SelectItem>
+                    <SelectItem value="CFR">CFR</SelectItem>
+                    <SelectItem value="EXW">EXW</SelectItem>
                   </SelectContent>
                 </Select>
-                {errors.status && (
-                  <p className="text-xs text-red-500">{errors.status.message}</p>
-                )}
+              </div>
+
+              {/* Row 5 */}
+              <div className="space-y-1">
+                <Label htmlFor="hblNo" className="text-xs font-medium">HBL Number</Label>
+                <Input
+                  id="hblNo"
+                  value={formData.hblNo}
+                  onChange={(e) => handleInputChange("hblNo", e.target.value)}
+                  placeholder="TPENDL25040858"
+                  className="h-8 text-sm"
+                />
+              </div>
+              <div className="space-y-1">
+                <Label htmlFor="hblDate" className="text-xs font-medium">HBL Date</Label>
+                <Input
+                  id="hblDate"
+                  type="date"
+                  value={formData.hblDate}
+                  onChange={(e) => handleInputChange("hblDate", e.target.value)}
+                  className="h-8 text-sm"
+                />
+              </div>
+              <div className="space-y-1">
+                <Label htmlFor="mblNo" className="text-xs font-medium">MBL Number</Label>
+                <Input
+                  id="mblNo"
+                  value={formData.mblNo}
+                  onChange={(e) => handleInputChange("mblNo", e.target.value)}
+                  placeholder="ONEYTPEF2627600"
+                  className="h-8 text-sm"
+                />
+              </div>
+              <div className="space-y-1">
+                <Label htmlFor="mblDate" className="text-xs font-medium">MBL Date</Label>
+                <Input
+                  id="mblDate"
+                  type="date"
+                  value={formData.mblDate}
+                  onChange={(e) => handleInputChange("mblDate", e.target.value)}
+                  className="h-8 text-sm"
+                />
+              </div>
+
+              {/* Row 6 */}
+              <div className="space-y-1">
+                <Label htmlFor="rmName" className="text-xs font-medium">RM Name</Label>
+                <Input
+                  id="rmName"
+                  value={formData.rmName}
+                  onChange={(e) => handleInputChange("rmName", e.target.value)}
+                  placeholder="Manish Kumar"
+                  className="h-8 text-sm"
+                />
+              </div>
+              <div className="space-y-1 lg:col-span-3">
+                <Label htmlFor="vesselVoyDetails" className="text-xs font-medium">Vessel/Voyage Details</Label>
+                <Input
+                  id="vesselVoyDetails"
+                  value={formData.vesselVoyDetails}
+                  onChange={(e) => handleInputChange("vesselVoyDetails", e.target.value)}
+                  placeholder="EVER EAGLE - 188W"
+                  className="h-8 text-sm"
+                />
               </div>
             </div>
 
-            {/* Full-width fields */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Full Width Fields */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
               <div className="space-y-1">
-                <Label htmlFor="consigneeDetails" className="text-xs font-medium">Consignee Details *</Label>
+                <Label htmlFor="consigneeDetails" className="text-xs font-medium">Consignee Details</Label>
                 <Textarea
                   id="consigneeDetails"
-                  {...register("consigneeDetails")}
+                  value={formData.consigneeDetails}
+                  onChange={(e) => handleInputChange("consigneeDetails", e.target.value)}
                   placeholder="CROWNWELL INTERNATIONAL"
-                  rows={2}
-                  className="text-sm"
+                  className="min-h-[60px] text-sm resize-none"
                 />
-                {errors.consigneeDetails && (
-                  <p className="text-xs text-red-500">{errors.consigneeDetails.message}</p>
-                )}
               </div>
-
               <div className="space-y-1">
-                <Label htmlFor="shipperDetails" className="text-xs font-medium">Shipper Details *</Label>
+                <Label htmlFor="shipperDetails" className="text-xs font-medium">Shipper Details</Label>
                 <Textarea
                   id="shipperDetails"
-                  {...register("shipperDetails")}
+                  value={formData.shipperDetails}
+                  onChange={(e) => handleInputChange("shipperDetails", e.target.value)}
                   placeholder="GINKO FILM"
-                  rows={2}
-                  className="text-sm"
+                  className="min-h-[60px] text-sm resize-none"
                 />
-                {errors.shipperDetails && (
-                  <p className="text-xs text-red-500">{errors.shipperDetails.message}</p>
-                )}
               </div>
-
               <div className="space-y-1">
-                <Label htmlFor="overseasAgentDetails" className="text-xs font-medium">Overseas Agent Details *</Label>
+                <Label htmlFor="overseasAgentDetails" className="text-xs font-medium">Overseas Agent Details</Label>
                 <Textarea
                   id="overseasAgentDetails"
-                  {...register("overseasAgentDetails")}
+                  value={formData.overseasAgentDetails}
+                  onChange={(e) => handleInputChange("overseasAgentDetails", e.target.value)}
                   placeholder="ORIENTAL VANGUARD LOGISTICS CO LTD"
-                  rows={2}
-                  className="text-sm"
+                  className="min-h-[60px] text-sm resize-none"
                 />
-                {errors.overseasAgentDetails && (
-                  <p className="text-xs text-red-500">{errors.overseasAgentDetails.message}</p>
-                )}
               </div>
-
               <div className="space-y-1">
                 <Label htmlFor="remarks" className="text-xs font-medium">Remarks</Label>
                 <Textarea
                   id="remarks"
-                  {...register("remarks")}
+                  value={formData.remarks}
+                  onChange={(e) => handleInputChange("remarks", e.target.value)}
                   placeholder="BILL AS PER QUOTE"
-                  rows={2}
-                  className="text-sm"
+                  className="min-h-[60px] text-sm resize-none"
                 />
               </div>
             </div>
 
-            <div className="flex justify-end space-x-3 pt-2">
-              <Button type="button" variant="outline" onClick={() => reset()} className="h-8 text-sm">
-                Clear Form
+            {/* Action Buttons */}
+            <div className="flex justify-end space-x-2 pt-2">
+              <Button type="button" variant="outline" size="sm">
+                Save as Draft
               </Button>
-              <Button type="submit" className="bg-blue-600 hover:bg-blue-700 h-8 text-sm">
+              <Button type="submit" size="sm">
+                <Save className="w-3 h-3 mr-1" />
                 Create Job
               </Button>
             </div>
