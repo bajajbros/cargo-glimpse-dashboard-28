@@ -1,3 +1,4 @@
+
 import { useState, useMemo } from "react";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -419,7 +420,7 @@ export default function ViewJobs() {
           <ChevronDown className="ml-1 h-3 w-3" />
         </div>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="start" className="w-40 bg-white border shadow-lg">
+      <DropdownMenuContent align="start" className="w-40 bg-white border shadow-lg z-50">
         <DropdownMenuLabel className="text-xs">{label}</DropdownMenuLabel>
         <DropdownMenuSeparator />
         {values.map((value) => (
@@ -438,7 +439,7 @@ export default function ViewJobs() {
 
   return (
     <div className="h-full flex flex-col">
-      {/* Minimal Header */}
+      {/* Compact Header */}
       <div className="px-4 py-2 border-b bg-white">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-4">
