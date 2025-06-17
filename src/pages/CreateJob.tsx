@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -7,12 +6,17 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { CalendarIcon, Plus, Save } from "lucide-react";
+import { Plus, Save } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/contexts/AuthContext";
+import { collection, addDoc, serverTimestamp } from "firebase/firestore";
+import { db } from "@/config/firebase";
+import { JobFormData } from "@/types/job";
 
 export default function CreateJob() {
   const { toast } = useToast();
-  const [formData, setFormData] = useState({
+  const { user } = useAuth();
+  const [formData, setFormData] = useState<JobFormData>({
     airShippingLine: "",
     bookingNo: "",
     consigneeDetails: "",
@@ -45,43 +49,70 @@ export default function CreateJob() {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log("Form submitted:", formData);
-    toast({
-      title: "Job Created Successfully",
-      description: `Job ${formData.jobNumber || 'New Job'} has been created.`,
-    });
     
-    // Reset form
-    setFormData({
-      airShippingLine: "",
-      bookingNo: "",
-      consigneeDetails: "",
-      containerFlightNo: "",
-      etaPod: "",
-      finalDestination: "",
-      grossWeight: "",
-      hblDate: "",
-      hblNo: "",
-      invoiceNo: "",
-      jobNumber: "",
-      lclFclAir: "",
-      mblDate: "",
-      mblNo: "",
-      modeOfShipment: "",
-      netWeight: "",
-      overseasAgentDetails: "",
-      portOfLoading: "",
-      remarks: "",
-      rmName: "",
-      shipmentType: "",
-      shipperDetails: "",
-      status: "",
-      terms: "",
-      totalPackages: "",
-      vesselVoyDetails: "",
-    });
+    if (!user) {
+      toast({
+        title: "Error",
+        description: "You must be logged in to create jobs.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      const jobData = {
+        ...formData,
+        createdBy: user.id,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+      };
+
+      await addDoc(collection(db, "jobs"), jobData);
+      
+      toast({
+        title: "Job Created Successfully",
+        description: `Job ${formData.jobNumber || 'New Job'} has been created.`,
+      });
+      
+      // Reset form
+      setFormData({
+        airShippingLine: "",
+        bookingNo: "",
+        consigneeDetails: "",
+        containerFlightNo: "",
+        etaPod: "",
+        finalDestination: "",
+        grossWeight: "",
+        hblDate: "",
+        hblNo: "",
+        invoiceNo: "",
+        jobNumber: "",
+        lclFclAir: "",
+        mblDate: "",
+        mblNo: "",
+        modeOfShipment: "",
+        netWeight: "",
+        overseasAgentDetails: "",
+        portOfLoading: "",
+        remarks: "",
+        rmName: "",
+        shipmentType: "",
+        shipperDetails: "",
+        status: "",
+        terms: "",
+        totalPackages: "",
+        vesselVoyDetails: "",
+      });
+    } catch (error) {
+      console.error("Error creating job:", error);
+      toast({
+        title: "Error",
+        description: "Failed to create job. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
 
   return (
@@ -116,6 +147,7 @@ export default function CreateJob() {
                   onChange={(e) => handleInputChange("jobNumber", e.target.value)}
                   placeholder="FF-10010/25-26"
                   className="h-8 text-sm"
+                  required
                 />
               </div>
               <div className="space-y-1">
