@@ -24,24 +24,53 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser: FirebaseUser | null) => {
+      console.log('Auth state changed:', firebaseUser ? 'User logged in' : 'User logged out');
+      
       if (firebaseUser) {
         try {
+          console.log('Fetching user document for:', firebaseUser.uid);
           const userDoc = await getDoc(doc(db, 'users', firebaseUser.uid));
+          
+          let userData;
           if (userDoc.exists()) {
-            const userData = userDoc.data();
-            setUser({
-              id: firebaseUser.uid,
-              email: firebaseUser.email!,
-              role: userData.role,
-              createdAt: userData.createdAt?.toDate(),
-              createdBy: userData.createdBy
-            });
+            console.log('User document found:', userDoc.data());
+            userData = userDoc.data();
+          } else {
+            console.log('User document not found, creating default user data');
+            // If user document doesn't exist, create a default user
+            userData = {
+              role: 'rms', // default role
+              createdAt: new Date(),
+              createdBy: 'system'
+            };
           }
+          
+          const newUser = {
+            id: firebaseUser.uid,
+            email: firebaseUser.email!,
+            role: userData.role,
+            createdAt: userData.createdAt?.toDate ? userData.createdAt.toDate() : userData.createdAt,
+            createdBy: userData.createdBy
+          };
+          
+          console.log('Setting user state:', newUser);
+          setUser(newUser);
         } catch (err) {
           console.error('Error fetching user data:', err);
-          setError('Failed to load user data');
+          // Even if there's an error, set a basic user object so login can proceed
+          const basicUser = {
+            id: firebaseUser.uid,
+            email: firebaseUser.email!,
+            role: 'rms' as const,
+            createdAt: new Date(),
+            createdBy: 'system'
+          };
+          console.log('Setting basic user due to error:', basicUser);
+          setUser(basicUser);
+          setError('Failed to load complete user data, using basic profile');
         }
       } else {
+        console.log('No user, setting user to null');
         setUser(null);
       }
       setLoading(false);
@@ -54,8 +83,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       setError(null);
       setLoading(true);
-      await signInWithEmailAndPassword(auth, email, password);
+      console.log('Attempting login for:', email);
+      const result = await signInWithEmailAndPassword(auth, email, password);
+      console.log('Login successful:', result.user.uid);
     } catch (err: any) {
+      console.error('Login error:', err);
       setError(err.message);
       throw err;
     } finally {

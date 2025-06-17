@@ -12,29 +12,34 @@ export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const { login, user } = useAuth();
+  const { login, user, loading } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
 
   // Navigate to dashboard if user is already logged in
   useEffect(() => {
-    if (user) {
-      navigate('/');
+    console.log('Login useEffect - user:', user, 'loading:', loading);
+    if (user && !loading) {
+      console.log('User is logged in, navigating to dashboard');
+      navigate('/', { replace: true });
     }
-  }, [user, navigate]);
+  }, [user, loading, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
+    console.log('Login form submitted');
 
     try {
       await login(email, password);
+      console.log('Login function completed successfully');
       toast({
         title: "Login Successful",
         description: "Welcome back!",
       });
       // Navigation will happen automatically via useEffect when user state updates
     } catch (error: any) {
+      console.error('Login failed:', error);
       toast({
         title: "Login Failed",
         description: error.message,
@@ -44,6 +49,15 @@ export default function Login() {
       setIsLoading(false);
     }
   };
+
+  // Show loading state
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-lg">Loading...</div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50">
