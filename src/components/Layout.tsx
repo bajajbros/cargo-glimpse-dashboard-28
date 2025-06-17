@@ -1,10 +1,12 @@
 
 import { useState } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { FileText, LayoutDashboard, Menu, Plus } from "lucide-react";
+import { FileText, LayoutDashboard, Menu, Plus, Users, LogOut } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
+import { useToast } from "@/hooks/use-toast";
 
 const navigationItems = [
   {
@@ -31,6 +33,37 @@ interface LayoutProps {
 export function Layout({ children }: LayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const location = useLocation();
+  const navigate = useNavigate();
+  const { user, logout } = useAuth();
+  const { toast } = useToast();
+
+  const handleLogout = async () => {
+    try {
+      await logout();
+      toast({
+        title: "Logged out",
+        description: "You have been successfully logged out.",
+      });
+      navigate('/login');
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to logout. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const allNavigationItems = [
+    ...navigationItems,
+    ...(user?.role === 'superadmin' ? [
+      {
+        title: "Manage Users",
+        href: "/manage-users",
+        icon: Users,
+      }
+    ] : [])
+  ];
 
   const SidebarContent = () => (
     <div className="flex h-full flex-col bg-blue-50 border-r">
@@ -38,7 +71,7 @@ export function Layout({ children }: LayoutProps) {
         <h2 className="text-lg font-bold text-blue-900">Logistics Hub</h2>
       </div>
       <nav className="flex-1 space-y-1 p-3">
-        {navigationItems.map((item) => {
+        {allNavigationItems.map((item) => {
           const Icon = item.icon;
           return (
             <Link
@@ -58,12 +91,29 @@ export function Layout({ children }: LayoutProps) {
           );
         })}
       </nav>
+      <div className="border-t p-3">
+        <div className="text-xs text-blue-600 mb-2">
+          Logged in as: {user?.email}
+        </div>
+        <div className="text-xs text-blue-500 mb-3">
+          Role: {user?.role}
+        </div>
+        <Button
+          onClick={handleLogout}
+          variant="ghost"
+          size="sm"
+          className="w-full justify-start text-blue-700 hover:bg-blue-100"
+        >
+          <LogOut className="h-4 w-4 mr-2" />
+          Logout
+        </Button>
+      </div>
     </div>
   );
 
   return (
     <div className="flex h-screen bg-gray-50">
-      {/* Desktop Sidebar - Made narrower */}
+      {/* Desktop Sidebar */}
       <aside className="hidden w-56 lg:block">
         <SidebarContent />
       </aside>
@@ -77,7 +127,7 @@ export function Layout({ children }: LayoutProps) {
 
       {/* Main Content */}
       <div className="flex flex-1 flex-col overflow-hidden">
-        {/* Compact Header */}
+        {/* Header */}
         <header className="flex h-12 items-center justify-between border-b bg-white px-4">
           <div className="flex items-center space-x-3">
             <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
@@ -88,16 +138,14 @@ export function Layout({ children }: LayoutProps) {
               </SheetTrigger>
             </Sheet>
             <h1 className="text-base font-semibold text-gray-900">
-              {navigationItems.find(item => item.href === location.pathname)?.title || "Dashboard"}
+              {allNavigationItems.find(item => item.href === location.pathname)?.title || "Dashboard"}
             </h1>
           </div>
           <div className="flex items-center space-x-2">
-            <Button variant="ghost" size="sm" className="text-xs">
-              Settings
-            </Button>
+            <span className="text-sm text-gray-600">{user?.email}</span>
           </div>
         </header>
-        <main className="flex-1 overflow-hidden">
+        <main className="flex-1 overflow-auto">
           {children}
         </main>
       </div>
