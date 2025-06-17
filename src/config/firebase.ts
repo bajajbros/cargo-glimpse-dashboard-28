@@ -4,13 +4,13 @@ import { getAuth } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
 
 const firebaseConfig = {
-  // You'll need to add your Firebase config here
-  apiKey: "your-api-key",
-  authDomain: "your-project.firebaseapp.com",
-  projectId: "your-project-id",
-  storageBucket: "your-project.appspot.com",
-  messagingSenderId: "123456789",
-  appId: "your-app-id"
+  apiKey: 'AIzaSyBA1Oj20-hf-NvyXo68nZozNBu1oV0r1_k',
+  appId: '1:795655060434:web:dc11acb94c681c1809260b',
+  messagingSenderId: '795655060434',
+  projectId: 'himtech-379cb',
+  authDomain: 'himtech-379cb.firebaseapp.com',
+  storageBucket: 'himtech-379cb.firebasestorage.app',
+  measurementId: 'G-ZM38P7TEPT',
 };
 
 const app = initializeApp(firebaseConfig);
