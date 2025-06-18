@@ -78,7 +78,11 @@ export function Layout({ children }: LayoutProps) {
     // Filter items based on permissions
     return baseItems.filter(item => {
       if (item.requiredRole && item.permission) {
-        // Check if user has the required permission
+        // For superadmin, show all items regardless of permissions in database
+        if (user?.role === 'superadmin') {
+          return true;
+        }
+        // For other users, check if user has the required permission
         return user?.permissions?.[item.permission] === true;
       }
       return true;

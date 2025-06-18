@@ -7,11 +7,42 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { FileText, Download, Search, Filter, RefreshCw } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { FileText, Download, Search, Filter, RefreshCw, Settings } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { collection, query, orderBy, onSnapshot, where } from "firebase/firestore";
+import { collection, query, orderBy, onSnapshot } from "firebase/firestore";
 import { db } from "@/config/firebase";
 import { Job } from "@/types/job";
+
+const ALL_COLUMNS = [
+  { key: 'jobNumber', label: 'Job Number', visible: true },
+  { key: 'bookingNo', label: 'Booking No', visible: true },
+  { key: 'invoiceNo', label: 'Invoice No', visible: true },
+  { key: 'status', label: 'Status', visible: true },
+  { key: 'airShippingLine', label: 'Air/Shipping Line', visible: true },
+  { key: 'modeOfShipment', label: 'Mode', visible: true },
+  { key: 'shipmentType', label: 'Type', visible: true },
+  { key: 'lclFclAir', label: 'LCL/FCL/Air', visible: true },
+  { key: 'containerFlightNumbers', label: 'Container/Flight No', visible: true },
+  { key: 'portOfLoading', label: 'Port of Loading', visible: true },
+  { key: 'finalDestination', label: 'Final Destination', visible: true },
+  { key: 'etaPod', label: 'ETA POD', visible: true },
+  { key: 'grossWeight', label: 'Gross Weight', visible: true },
+  { key: 'netWeight', label: 'Net Weight', visible: true },
+  { key: 'totalPackages', label: 'Total Packages', visible: true },
+  { key: 'terms', label: 'Terms', visible: true },
+  { key: 'hblNo', label: 'HBL No', visible: true },
+  { key: 'hblDate', label: 'HBL Date', visible: true },
+  { key: 'mblNo', label: 'MBL No', visible: true },
+  { key: 'mblDate', label: 'MBL Date', visible: true },
+  { key: 'rmName', label: 'RM Name', visible: true },
+  { key: 'vesselVoyDetails', label: 'Vessel/Voyage Details', visible: true },
+  { key: 'consigneeDetails', label: 'Consignee Details', visible: true },
+  { key: 'shipperDetails', label: 'Shipper Details', visible: true },
+  { key: 'overseasAgentDetails', label: 'Overseas Agent Details', visible: true },
+  { key: 'remarks', label: 'Remarks', visible: true },
+  { key: 'createdAt', label: 'Created', visible: true },
+];
 
 export default function ViewJobs() {
   const { toast } = useToast();
@@ -22,6 +53,8 @@ export default function ViewJobs() {
   const [statusFilter, setStatusFilter] = useState("all");
   const [modeFilter, setModeFilter] = useState("all");
   const [typeFilter, setTypeFilter] = useState("all");
+  const [columnSettings, setColumnSettings] = useState(ALL_COLUMNS);
+  const [showColumnSettings, setShowColumnSettings] = useState(false);
 
   useEffect(() => {
     const q = query(collection(db, "jobs"), orderBy("createdAt", "desc"));
@@ -84,6 +117,14 @@ export default function ViewJobs() {
     setFilteredJobs(filtered);
   }, [jobs, searchTerm, statusFilter, modeFilter, typeFilter]);
 
+  const toggleColumn = (columnKey: string) => {
+    setColumnSettings(prev => 
+      prev.map(col => 
+        col.key === columnKey ? { ...col, visible: !col.visible } : col
+      )
+    );
+  };
+
   const exportToCSV = () => {
     if (filteredJobs.length === 0) {
       toast({
@@ -94,41 +135,25 @@ export default function ViewJobs() {
       return;
     }
 
-    const headers = [
-      "Job Number", "Booking No", "Invoice No", "Status", "Air/Shipping Line",
-      "Mode of Shipment", "Shipment Type", "LCL/FCL/Air", "Container/Flight No",
-      "Port of Loading", "Final Destination", "ETA POD", "Gross Weight", "Net Weight",
-      "Total Packages", "Terms", "HBL No", "HBL Date", "MBL No", "MBL Date",
-      "RM Name", "Vessel/Voyage Details", "Created At"
-    ];
+    const visibleColumns = columnSettings.filter(col => col.visible);
+    const headers = visibleColumns.map(col => col.label);
 
     const csvContent = [
       headers.join(","),
-      ...filteredJobs.map(job => [
-        job.jobNumber,
-        job.bookingNo,
-        job.invoiceNo,
-        job.status,
-        job.airShippingLine,
-        job.modeOfShipment,
-        job.shipmentType,
-        job.lclFclAir,
-        job.containerFlightNo,
-        job.portOfLoading,
-        job.finalDestination,
-        job.etaPod,
-        job.grossWeight,
-        job.netWeight,
-        job.totalPackages,
-        job.terms,
-        job.hblNo,
-        job.hblDate,
-        job.mblNo,
-        job.mblDate,
-        job.rmName,
-        job.vesselVoyDetails,
-        job.createdAt?.toLocaleDateString()
-      ].map(field => `"${String(field || '').replace(/"/g, '""')}"`).join(","))
+      ...filteredJobs.map(job => visibleColumns.map(col => {
+        let value = '';
+        switch (col.key) {
+          case 'containerFlightNumbers':
+            value = Array.isArray(job.containerFlightNumbers) ? job.containerFlightNumbers.join('; ') : '';
+            break;
+          case 'createdAt':
+            value = job.createdAt?.toLocaleDateString() || '';
+            break;
+          default:
+            value = (job as any)[col.key] || '';
+        }
+        return `"${String(value).replace(/"/g, '""')}"`;
+      }).join(","))
     ].join("\n");
 
     const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
@@ -157,6 +182,23 @@ export default function ViewJobs() {
     return <Badge variant={variants[status] || "default"}>{status}</Badge>;
   };
 
+  const renderCellValue = (job: Job, columnKey: string) => {
+    switch (columnKey) {
+      case 'status':
+        return getStatusBadge(job.status);
+      case 'containerFlightNumbers':
+        return Array.isArray(job.containerFlightNumbers) 
+          ? job.containerFlightNumbers.join(', ') 
+          : '';
+      case 'createdAt':
+        return job.createdAt?.toLocaleDateString();
+      default:
+        return (job as any)[columnKey] || '';
+    }
+  };
+
+  const visibleColumns = columnSettings.filter(col => col.visible);
+
   if (loading) {
     return (
       <div className="p-6 flex items-center justify-center">
@@ -180,13 +222,44 @@ export default function ViewJobs() {
                 Manage and track all logistics jobs
               </CardDescription>
             </div>
-            <Button onClick={exportToCSV} className="flex items-center gap-2">
-              <Download className="h-4 w-4" />
-              Export CSV
-            </Button>
+            <div className="flex gap-2">
+              <Button 
+                onClick={() => setShowColumnSettings(!showColumnSettings)} 
+                variant="outline"
+                className="flex items-center gap-2"
+              >
+                <Settings className="h-4 w-4" />
+                Columns
+              </Button>
+              <Button onClick={exportToCSV} className="flex items-center gap-2">
+                <Download className="h-4 w-4" />
+                Export CSV
+              </Button>
+            </div>
           </div>
         </CardHeader>
         <CardContent>
+          {/* Column Settings */}
+          {showColumnSettings && (
+            <div className="mb-6 p-4 border rounded-lg bg-gray-50">
+              <h4 className="font-medium mb-3">Show/Hide Columns</h4>
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+                {columnSettings.map((column) => (
+                  <div key={column.key} className="flex items-center space-x-2">
+                    <Checkbox
+                      id={column.key}
+                      checked={column.visible}
+                      onCheckedChange={() => toggleColumn(column.key)}
+                    />
+                    <Label htmlFor={column.key} className="text-sm">
+                      {column.label}
+                    </Label>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* Filters */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
             <div className="space-y-2">
@@ -264,42 +337,30 @@ export default function ViewJobs() {
           </div>
 
           {/* Jobs Table */}
-          <div className="border rounded-lg overflow-hidden">
+          <div className="border rounded-lg overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Job Number</TableHead>
-                  <TableHead>Booking No</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Mode</TableHead>
-                  <TableHead>Type</TableHead>
-                  <TableHead>Port of Loading</TableHead>
-                  <TableHead>Final Destination</TableHead>
-                  <TableHead>ETA POD</TableHead>
-                  <TableHead>RM Name</TableHead>
-                  <TableHead>Created</TableHead>
+                  {visibleColumns.map((column) => (
+                    <TableHead key={column.key}>{column.label}</TableHead>
+                  ))}
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {filteredJobs.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={10} className="text-center py-8 text-gray-500">
+                    <TableCell colSpan={visibleColumns.length} className="text-center py-8 text-gray-500">
                       No jobs found matching your criteria
                     </TableCell>
                   </TableRow>
                 ) : (
                   filteredJobs.map((job) => (
                     <TableRow key={job.id}>
-                      <TableCell className="font-medium">{job.jobNumber}</TableCell>
-                      <TableCell>{job.bookingNo}</TableCell>
-                      <TableCell>{getStatusBadge(job.status)}</TableCell>
-                      <TableCell>{job.modeOfShipment}</TableCell>
-                      <TableCell>{job.shipmentType}</TableCell>
-                      <TableCell>{job.portOfLoading}</TableCell>
-                      <TableCell>{job.finalDestination}</TableCell>
-                      <TableCell>{job.etaPod}</TableCell>
-                      <TableCell>{job.rmName}</TableCell>
-                      <TableCell>{job.createdAt?.toLocaleDateString()}</TableCell>
+                      {visibleColumns.map((column) => (
+                        <TableCell key={column.key} className={column.key === 'jobNumber' ? 'font-medium' : ''}>
+                          {renderCellValue(job, column.key)}
+                        </TableCell>
+                      ))}
                     </TableRow>
                   ))
                 )}

@@ -1,7 +1,8 @@
 
 import React, { useState, useEffect } from 'react';
 import { collection, addDoc, getDocs, query, where, deleteDoc, doc, updateDoc } from 'firebase/firestore';
-import { db } from '@/config/firebase';
+import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
+import { db, storage } from '@/config/firebase';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -10,13 +11,15 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
-import { Plus, Edit, Trash2 } from 'lucide-react';
+import { Plus, Edit, Trash2, Upload, FileText, Download } from 'lucide-react';
 
 interface Entity {
   id: string;
   name: string;
   phone: string;
   email: string;
+  documentUrl?: string;
+  documentName?: string;
   createdAt: Date;
 }
 
@@ -31,6 +34,7 @@ const EntityTab = ({
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
+  const [document, setDocument] = useState<File | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingEntity, setEditingEntity] = useState<Entity | null>(null);
@@ -51,12 +55,34 @@ const EntityTab = ({
           name: data.name,
           phone: data.phone,
           email: data.email,
+          documentUrl: data.documentUrl,
+          documentName: data.documentName,
           createdAt: data.createdAt?.toDate(),
         });
       });
       setEntities(entitiesList.sort((a, b) => a.name.localeCompare(b.name)));
     } catch (error) {
       console.error('Error fetching entities:', error);
+    }
+  };
+
+  const uploadDocument = async (file: File, entityId: string): Promise<{ url: string; name: string }> => {
+    const timestamp = Date.now();
+    const fileName = `${entityType}/${entityId}/${timestamp}_${file.name}`;
+    const storageRef = ref(storage, fileName);
+    
+    await uploadBytes(storageRef, file);
+    const downloadURL = await getDownloadURL(storageRef);
+    
+    return { url: downloadURL, name: file.name };
+  };
+
+  const deleteDocument = async (documentUrl: string) => {
+    try {
+      const fileRef = ref(storage, documentUrl);
+      await deleteObject(fileRef);
+    } catch (error) {
+      console.error('Error deleting document:', error);
     }
   };
 
@@ -84,10 +110,35 @@ const EntityTab = ({
         return;
       }
 
+      let documentData: { documentUrl?: string; documentName?: string } = {};
+
+      // Handle document upload
+      if (document) {
+        try {
+          const entityId = editingEntity?.id || Date.now().toString();
+          const uploadResult = await uploadDocument(document, entityId);
+          documentData.documentUrl = uploadResult.url;
+          documentData.documentName = uploadResult.name;
+
+          // If editing and there was an old document, delete it
+          if (editingEntity?.documentUrl) {
+            await deleteDocument(editingEntity.documentUrl);
+          }
+        } catch (error) {
+          console.error('Error uploading document:', error);
+          toast({
+            title: "Warning",
+            description: "Document upload failed, but entity will be saved without document.",
+            variant: "destructive",
+          });
+        }
+      }
+
       const entityData = {
         name: name.trim(),
         phone: phone.trim(),
         email: email.trim(),
+        ...documentData,
         createdAt: editingEntity ? editingEntity.createdAt : new Date(),
       };
 
@@ -108,6 +159,7 @@ const EntityTab = ({
       setName('');
       setPhone('');
       setEmail('');
+      setDocument(null);
       setEditingEntity(null);
       setIsDialogOpen(false);
       fetchEntities();
@@ -127,12 +179,18 @@ const EntityTab = ({
     setName(entity.name);
     setPhone(entity.phone);
     setEmail(entity.email);
+    setDocument(null);
     setIsDialogOpen(true);
   };
 
   const handleDelete = async (entity: Entity) => {
     if (confirm(`Are you sure you want to delete ${entity.name}?`)) {
       try {
+        // Delete document if exists
+        if (entity.documentUrl) {
+          await deleteDocument(entity.documentUrl);
+        }
+        
         await deleteDoc(doc(db, entityType, entity.id));
         toast({
           title: "Success",
@@ -153,7 +211,18 @@ const EntityTab = ({
     setName('');
     setPhone('');
     setEmail('');
+    setDocument(null);
     setEditingEntity(null);
+  };
+
+  const downloadDocument = (url: string, name: string) => {
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = name;
+    link.target = '_blank';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
   return (
@@ -170,7 +239,7 @@ const EntityTab = ({
               Add {entityLabel}
             </Button>
           </DialogTrigger>
-          <DialogContent>
+          <DialogContent className="max-w-md">
             <DialogHeader>
               <DialogTitle>{editingEntity ? 'Edit' : 'Add'} {entityLabel}</DialogTitle>
               <DialogDescription>
@@ -207,6 +276,24 @@ const EntityTab = ({
                   onChange={(e) => setEmail(e.target.value)}
                 />
               </div>
+              <div className="space-y-2">
+                <Label htmlFor="document">Document</Label>
+                <div className="flex items-center space-x-2">
+                  <Input
+                    id="document"
+                    type="file"
+                    accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+                    onChange={(e) => setDocument(e.target.files?.[0] || null)}
+                    className="flex-1"
+                  />
+                  <Upload className="w-4 h-4 text-gray-400" />
+                </div>
+                {editingEntity?.documentName && !document && (
+                  <p className="text-xs text-gray-500">
+                    Current: {editingEntity.documentName}
+                  </p>
+                )}
+              </div>
               <div className="flex justify-end space-x-2">
                 <Button 
                   type="button" 
@@ -232,6 +319,7 @@ const EntityTab = ({
                 <TableHead>Name</TableHead>
                 <TableHead>Phone</TableHead>
                 <TableHead>Email</TableHead>
+                <TableHead>Document</TableHead>
                 <TableHead>Created Date</TableHead>
                 <TableHead>Actions</TableHead>
               </TableRow>
@@ -242,6 +330,21 @@ const EntityTab = ({
                   <TableCell className="font-medium">{entity.name}</TableCell>
                   <TableCell>{entity.phone}</TableCell>
                   <TableCell>{entity.email}</TableCell>
+                  <TableCell>
+                    {entity.documentUrl ? (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => downloadDocument(entity.documentUrl!, entity.documentName!)}
+                        className="flex items-center gap-1"
+                      >
+                        <FileText className="w-3 h-3" />
+                        <Download className="w-3 h-3" />
+                      </Button>
+                    ) : (
+                      <span className="text-gray-400 text-sm">No document</span>
+                    )}
+                  </TableCell>
                   <TableCell>{entity.createdAt?.toLocaleDateString()}</TableCell>
                   <TableCell>
                     <div className="flex space-x-2">
@@ -265,7 +368,7 @@ const EntityTab = ({
               ))}
               {entities.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={5} className="text-center py-6 text-muted-foreground">
+                  <TableCell colSpan={6} className="text-center py-6 text-muted-foreground">
                     No {entityLabel.toLowerCase()}s found. Add one to get started.
                   </TableCell>
                 </TableRow>
