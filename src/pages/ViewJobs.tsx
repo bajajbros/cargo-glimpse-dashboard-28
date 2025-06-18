@@ -191,9 +191,40 @@ export default function ViewJobs() {
           ? job.containerFlightNumbers.join(', ') 
           : '';
       case 'createdAt':
-        return job.createdAt?.toLocaleDateString();
+        if (job.createdAt) {
+          // Handle both Date objects and Firebase Timestamps
+          if (job.createdAt.toDate && typeof job.createdAt.toDate === 'function') {
+            return job.createdAt.toDate().toLocaleDateString();
+          }
+          if (job.createdAt instanceof Date) {
+            return job.createdAt.toLocaleDateString();
+          }
+        }
+        return '';
+      case 'hblDate':
+      case 'mblDate':
+        const dateValue = (job as any)[columnKey];
+        if (dateValue) {
+          // Handle both Date objects and Firebase Timestamps
+          if (dateValue.toDate && typeof dateValue.toDate === 'function') {
+            return dateValue.toDate().toLocaleDateString();
+          }
+          if (dateValue instanceof Date) {
+            return dateValue.toLocaleDateString();
+          }
+          // Handle string dates
+          if (typeof dateValue === 'string') {
+            return dateValue;
+          }
+        }
+        return '';
       default:
-        return (job as any)[columnKey] || '';
+        const value = (job as any)[columnKey];
+        // Ensure we never render objects directly
+        if (value && typeof value === 'object') {
+          return JSON.stringify(value);
+        }
+        return value || '';
     }
   };
 

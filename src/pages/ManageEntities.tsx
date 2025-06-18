@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { collection, addDoc, getDocs, query, where, deleteDoc, doc, updateDoc } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
@@ -215,14 +214,44 @@ const EntityTab = ({
     setEditingEntity(null);
   };
 
-  const downloadDocument = (url: string, name: string) => {
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = name;
-    link.target = '_blank';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+  const downloadDocument = async (entity: Entity) => {
+    if (!entity.documentUrl) {
+      toast({
+        title: "No document",
+        description: "This entity has no document attached.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      const response = await fetch(entity.documentUrl);
+      if (!response.ok) {
+        throw new Error('Failed to download document');
+      }
+      
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = entity.documentName || 'document';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+
+      toast({
+        title: "Download started",
+        description: "Document download has started.",
+      });
+    } catch (error) {
+      console.error("Error downloading document:", error);
+      toast({
+        title: "Download failed",
+        description: "Failed to download document. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
 
   return (
@@ -335,7 +364,7 @@ const EntityTab = ({
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => downloadDocument(entity.documentUrl!, entity.documentName!)}
+                        onClick={() => downloadDocument(entity)}
                         className="flex items-center gap-1"
                       >
                         <FileText className="w-3 h-3" />
