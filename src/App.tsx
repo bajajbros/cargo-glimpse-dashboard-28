@@ -12,6 +12,7 @@ import CreateJob from "./pages/CreateJob";
 import ViewJobs from "./pages/ViewJobs";
 import Login from "./pages/Login";
 import ManageUsers from "./pages/ManageUsers";
+import ManageEntities from "./pages/ManageEntities";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();

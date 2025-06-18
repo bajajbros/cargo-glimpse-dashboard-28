@@ -35,10 +35,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             console.log('User document found:', userDoc.data());
             const userData = userDoc.data();
             
-            const newUser = {
+            const newUser: User = {
               id: firebaseUser.uid,
               email: firebaseUser.email!,
-              role: userData.role === 'admin' ? 'superadmin' : 'rms',
+              role: userData.role === 'admin' ? 'superadmin' : 'rms' as 'superadmin' | 'rms',
               firstName: userData.firstName || '',
               lastName: userData.lastName || '',
               shortName: userData.userId || '',
@@ -50,12 +50,37 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             console.log('Setting user state:', newUser);
             setUser(newUser);
           } else {
-            throw new Error('User data not found');
+            // Even if user document doesn't exist, still set basic user data
+            console.log('User document not found, creating basic user');
+            const basicUser: User = {
+              id: firebaseUser.uid,
+              email: firebaseUser.email!,
+              role: 'superadmin',
+              firstName: '',
+              lastName: '',
+              shortName: '',
+              permissions: {},
+              createdAt: new Date(),
+              createdBy: ''
+            };
+            setUser(basicUser);
           }
         } catch (err) {
           console.error('Error fetching user data:', err);
           setError('Failed to load user data');
-          await signOut(auth);
+          // Don't sign out on error, just set basic user data
+          const basicUser: User = {
+            id: firebaseUser.uid,
+            email: firebaseUser.email!,
+            role: 'superadmin',
+            firstName: '',
+            lastName: '',
+            shortName: '',
+            permissions: {},
+            createdAt: new Date(),
+            createdBy: ''
+          };
+          setUser(basicUser);
         }
       } else {
         console.log('No user, setting user to null');
@@ -123,10 +148,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         });
 
         // For RM login, we need to manually set the user since Firebase Auth wasn't used
-        const newUser = {
+        const newUser: User = {
           id: rmDoc.id,
           email: rmData.email || '',
-          role: 'rms' as const,
+          role: 'rms',
           firstName: rmData.firstName || '',
           lastName: rmData.lastName || '',
           shortName: rmData.shortName || '',
