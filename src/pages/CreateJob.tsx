@@ -1,23 +1,35 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Save } from "lucide-react";
+import { Save } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
-import { collection, addDoc, serverTimestamp } from "firebase/firestore";
+import { collection, addDoc, serverTimestamp, getDocs, query, orderBy, limit } from "firebase/firestore";
 import { db } from "@/config/firebase";
 import { JobFormData } from "@/types/job";
+import { FilterableSelect } from "@/components/FilterableSelect";
+
+interface Entity {
+  id: string;
+  name: string;
+}
+
+interface RMUser {
+  id: string;
+  firstName: string;
+  lastName: string;
+  shortName: string;
+}
 
 export default function CreateJob() {
   const { toast } = useToast();
   const { user } = useAuth();
+  
   const [formData, setFormData] = useState<JobFormData>({
-    airShippingLine: "",
     bookingNo: "",
     consigneeDetails: "",
     containerFlightNo: "",
@@ -27,7 +39,6 @@ export default function CreateJob() {
     hblDate: "",
     hblNo: "",
     invoiceNo: "",
-    jobNumber: "",
     lclFclAir: "",
     mblDate: "",
     mblNo: "",
@@ -43,7 +54,108 @@ export default function CreateJob() {
     terms: "",
     totalPackages: "",
     vesselVoyDetails: "",
+    airShippingLine: "",
   });
+
+  // Entity options for dropdowns
+  const [shippers, setShippers] = useState<Entity[]>([]);
+  const [consignees, setConsignees] = useState<Entity[]>([]);
+  const [overseasAgents, setOverseasAgents] = useState<Entity[]>([]);
+  const [rmUsers, setRmUsers] = useState<RMUser[]>([]);
+
+  useEffect(() => {
+    fetchEntities();
+    fetchRMUsers();
+  }, []);
+
+  const fetchEntities = async () => {
+    try {
+      // Fetch shippers
+      const shippersSnapshot = await getDocs(collection(db, 'shippers'));
+      const shippersList: Entity[] = [];
+      shippersSnapshot.forEach((doc) => {
+        shippersList.push({ id: doc.id, name: doc.data().name });
+      });
+      setShippers(shippersList.sort((a, b) => a.name.localeCompare(b.name)));
+
+      // Fetch consignees
+      const consigneesSnapshot = await getDocs(collection(db, 'consignees'));
+      const consigneesList: Entity[] = [];
+      consigneesSnapshot.forEach((doc) => {
+        consigneesList.push({ id: doc.id, name: doc.data().name });
+      });
+      setConsignees(consigneesList.sort((a, b) => a.name.localeCompare(b.name)));
+
+      // Fetch overseas agents
+      const agentsSnapshot = await getDocs(collection(db, 'overseas_agents'));
+      const agentsList: Entity[] = [];
+      agentsSnapshot.forEach((doc) => {
+        agentsList.push({ id: doc.id, name: doc.data().name });
+      });
+      setOverseasAgents(agentsList.sort((a, b) => a.name.localeCompare(b.name)));
+    } catch (error) {
+      console.error('Error fetching entities:', error);
+    }
+  };
+
+  const fetchRMUsers = async () => {
+    try {
+      const rmSnapshot = await getDocs(collection(db, 'relationship_managers'));
+      const rmList: RMUser[] = [];
+      rmSnapshot.forEach((doc) => {
+        const data = doc.data();
+        rmList.push({
+          id: doc.id,
+          firstName: data.firstName,
+          lastName: data.lastName,
+          shortName: data.shortName,
+        });
+      });
+      setRmUsers(rmList.sort((a, b) => a.firstName.localeCompare(b.firstName)));
+    } catch (error) {
+      console.error('Error fetching RM users:', error);
+    }
+  };
+
+  const generateJobNumber = async (): Promise<string> => {
+    try {
+      // Get the current year
+      const currentYear = new Date().getFullYear();
+      const nextYear = currentYear + 1;
+      const yearSuffix = `${currentYear.toString().slice(-2)}-${nextYear.toString().slice(-2)}`;
+      
+      // Get the latest job number for this year
+      const jobsQuery = query(
+        collection(db, 'jobs'),
+        orderBy('createdAt', 'desc'),
+        limit(1)
+      );
+      
+      const snapshot = await getDocs(jobsQuery);
+      let nextNumber = 10010; // Starting number
+      
+      if (!snapshot.empty) {
+        const latestJob = snapshot.docs[0].data();
+        const latestJobNumber = latestJob.jobNumber as string;
+        
+        // Extract number from format like "FF-10010/25-26"
+        const match = latestJobNumber.match(/FF-(\d+)\/\d{2}-\d{2}/);
+        if (match) {
+          nextNumber = parseInt(match[1]) + 1;
+        }
+      }
+      
+      return `FF-${nextNumber}/${yearSuffix}`;
+    } catch (error) {
+      console.error('Error generating job number:', error);
+      // Fallback to timestamp-based number
+      const timestamp = Date.now().toString().slice(-5);
+      const currentYear = new Date().getFullYear();
+      const nextYear = currentYear + 1;
+      const yearSuffix = `${currentYear.toString().slice(-2)}-${nextYear.toString().slice(-2)}`;
+      return `FF-${10000 + parseInt(timestamp)}/${yearSuffix}`;
+    }
+  };
 
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -62,8 +174,12 @@ export default function CreateJob() {
     }
 
     try {
+      // Generate job number
+      const jobNumber = await generateJobNumber();
+      
       const jobData = {
         ...formData,
+        jobNumber,
         createdBy: user.id,
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
@@ -73,12 +189,11 @@ export default function CreateJob() {
       
       toast({
         title: "Job Created Successfully",
-        description: `Job ${formData.jobNumber || 'New Job'} has been created.`,
+        description: `Job ${jobNumber} has been created.`,
       });
       
       // Reset form
       setFormData({
-        airShippingLine: "",
         bookingNo: "",
         consigneeDetails: "",
         containerFlightNo: "",
@@ -88,7 +203,6 @@ export default function CreateJob() {
         hblDate: "",
         hblNo: "",
         invoiceNo: "",
-        jobNumber: "",
         lclFclAir: "",
         mblDate: "",
         mblNo: "",
@@ -104,6 +218,7 @@ export default function CreateJob() {
         terms: "",
         totalPackages: "",
         vesselVoyDetails: "",
+        airShippingLine: "",
       });
     } catch (error) {
       console.error("Error creating job:", error);
@@ -115,6 +230,15 @@ export default function CreateJob() {
     }
   };
 
+  // Convert entities to dropdown options
+  const shipperOptions = shippers.map(s => ({ value: s.name, label: s.name }));
+  const consigneeOptions = consignees.map(c => ({ value: c.name, label: c.name }));
+  const agentOptions = overseasAgents.map(a => ({ value: a.name, label: a.name }));
+  const rmOptions = rmUsers.map(rm => ({ 
+    value: `${rm.firstName} ${rm.lastName}`, 
+    label: `${rm.firstName} ${rm.lastName} (${rm.shortName})` 
+  }));
+
   return (
     <div className="p-3 h-full overflow-auto">
       <Card className="max-w-7xl mx-auto">
@@ -122,7 +246,6 @@ export default function CreateJob() {
           <div className="flex items-center justify-between">
             <div>
               <CardTitle className="flex items-center gap-2 text-lg">
-                <Plus className="h-4 w-4" />
                 Create New Job
               </CardTitle>
               <CardDescription className="text-sm">
@@ -138,18 +261,7 @@ export default function CreateJob() {
           <form onSubmit={handleSubmit} className="space-y-4">
             {/* Grid Layout for Maximum Space Utilization */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
-              {/* Row 1 */}
-              <div className="space-y-1">
-                <Label htmlFor="jobNumber" className="text-xs font-medium">Job Number</Label>
-                <Input
-                  id="jobNumber"
-                  value={formData.jobNumber}
-                  onChange={(e) => handleInputChange("jobNumber", e.target.value)}
-                  placeholder="FF-10010/25-26"
-                  className="h-8 text-sm"
-                  required
-                />
-              </div>
+              {/* Row 1 - Job Number removed, other fields remain */}
               <div className="space-y-1">
                 <Label htmlFor="bookingNo" className="text-xs font-medium">Booking Number</Label>
                 <Input
@@ -172,20 +284,32 @@ export default function CreateJob() {
               </div>
               <div className="space-y-1">
                 <Label htmlFor="status" className="text-xs font-medium">Status</Label>
-                <Select value={formData.status} onValueChange={(value) => handleInputChange("status", value)}>
-                  <SelectTrigger className="h-8 text-sm">
-                    <SelectValue placeholder="Select status" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Active">Active</SelectItem>
-                    <SelectItem value="Pending">Pending</SelectItem>
-                    <SelectItem value="Completed">Completed</SelectItem>
-                    <SelectItem value="Cancelled">Cancelled</SelectItem>
-                  </SelectContent>
-                </Select>
+                <FilterableSelect
+                  options={[
+                    { value: "Active", label: "Active" },
+                    { value: "Pending", label: "Pending" },
+                    { value: "Completed", label: "Completed" },
+                    { value: "Cancelled", label: "Cancelled" }
+                  ]}
+                  value={formData.status}
+                  onValueChange={(value) => handleInputChange("status", value)}
+                  placeholder="Select status"
+                  className="h-8 text-sm"
+                />
+              </div>
+              <div className="space-y-1">
+                <Label htmlFor="rmName" className="text-xs font-medium">RM Name</Label>
+                <FilterableSelect
+                  options={rmOptions}
+                  value={formData.rmName}
+                  onValueChange={(value) => handleInputChange("rmName", value)}
+                  placeholder="Select RM"
+                  searchPlaceholder="Search RMs..."
+                  className="h-8 text-sm"
+                />
               </div>
 
-              {/* Row 2 */}
+              {/* Continue with remaining fields... */}
               <div className="space-y-1">
                 <Label htmlFor="airShippingLine" className="text-xs font-medium">Air/Shipping Line</Label>
                 <Input
@@ -198,45 +322,48 @@ export default function CreateJob() {
               </div>
               <div className="space-y-1">
                 <Label htmlFor="modeOfShipment" className="text-xs font-medium">Mode of Shipment</Label>
-                <Select value={formData.modeOfShipment} onValueChange={(value) => handleInputChange("modeOfShipment", value)}>
-                  <SelectTrigger className="h-8 text-sm">
-                    <SelectValue placeholder="Select mode" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Sea">Sea</SelectItem>
-                    <SelectItem value="Air">Air</SelectItem>
-                    <SelectItem value="Road">Road</SelectItem>
-                    <SelectItem value="Rail">Rail</SelectItem>
-                  </SelectContent>
-                </Select>
+                <FilterableSelect
+                  options={[
+                    { value: "Sea", label: "Sea" },
+                    { value: "Air", label: "Air" },
+                    { value: "Road", label: "Road" },
+                    { value: "Rail", label: "Rail" }
+                  ]}
+                  value={formData.modeOfShipment}
+                  onValueChange={(value) => handleInputChange("modeOfShipment", value)}
+                  placeholder="Select mode"
+                  className="h-8 text-sm"
+                />
               </div>
               <div className="space-y-1">
                 <Label htmlFor="shipmentType" className="text-xs font-medium">Shipment Type</Label>
-                <Select value={formData.shipmentType} onValueChange={(value) => handleInputChange("shipmentType", value)}>
-                  <SelectTrigger className="h-8 text-sm">
-                    <SelectValue placeholder="Select type" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Import">Import</SelectItem>
-                    <SelectItem value="Export">Export</SelectItem>
-                  </SelectContent>
-                </Select>
+                <FilterableSelect
+                  options={[
+                    { value: "Import", label: "Import" },
+                    { value: "Export", label: "Export" }
+                  ]}
+                  value={formData.shipmentType}
+                  onValueChange={(value) => handleInputChange("shipmentType", value)}
+                  placeholder="Select type"
+                  className="h-8 text-sm"
+                />
               </div>
               <div className="space-y-1">
                 <Label htmlFor="lclFclAir" className="text-xs font-medium">LCL/FCL/Air</Label>
-                <Select value={formData.lclFclAir} onValueChange={(value) => handleInputChange("lclFclAir", value)}>
-                  <SelectTrigger className="h-8 text-sm">
-                    <SelectValue placeholder="Select option" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="LCL">LCL</SelectItem>
-                    <SelectItem value="FCL">FCL</SelectItem>
-                    <SelectItem value="Air">Air</SelectItem>
-                  </SelectContent>
-                </Select>
+                <FilterableSelect
+                  options={[
+                    { value: "LCL", label: "LCL" },
+                    { value: "FCL", label: "FCL" },
+                    { value: "Air", label: "Air" }
+                  ]}
+                  value={formData.lclFclAir}
+                  onValueChange={(value) => handleInputChange("lclFclAir", value)}
+                  placeholder="Select option"
+                  className="h-8 text-sm"
+                />
               </div>
 
-              {/* Row 3 */}
+              {/* Continue with more fields... keeping the existing layout but using FilterableSelect where appropriate */}
               <div className="space-y-1">
                 <Label htmlFor="containerFlightNo" className="text-xs font-medium">Container/Flight No</Label>
                 <Input
@@ -311,17 +438,18 @@ export default function CreateJob() {
               </div>
               <div className="space-y-1">
                 <Label htmlFor="terms" className="text-xs font-medium">Terms</Label>
-                <Select value={formData.terms} onValueChange={(value) => handleInputChange("terms", value)}>
-                  <SelectTrigger className="h-8 text-sm">
-                    <SelectValue placeholder="Select terms" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="FOB">FOB</SelectItem>
-                    <SelectItem value="CIF">CIF</SelectItem>
-                    <SelectItem value="CFR">CFR</SelectItem>
-                    <SelectItem value="EXW">EXW</SelectItem>
-                  </SelectContent>
-                </Select>
+                <FilterableSelect
+                  options={[
+                    { value: "FOB", label: "FOB" },
+                    { value: "CIF", label: "CIF" },
+                    { value: "CFR", label: "CFR" },
+                    { value: "EXW", label: "EXW" }
+                  ]}
+                  value={formData.terms}
+                  onValueChange={(value) => handleInputChange("terms", value)}
+                  placeholder="Select terms"
+                  className="h-8 text-sm"
+                />
               </div>
 
               {/* Row 5 */}
@@ -367,17 +495,7 @@ export default function CreateJob() {
               </div>
 
               {/* Row 6 */}
-              <div className="space-y-1">
-                <Label htmlFor="rmName" className="text-xs font-medium">RM Name</Label>
-                <Input
-                  id="rmName"
-                  value={formData.rmName}
-                  onChange={(e) => handleInputChange("rmName", e.target.value)}
-                  placeholder="Manish Kumar"
-                  className="h-8 text-sm"
-                />
-              </div>
-              <div className="space-y-1 lg:col-span-3">
+              <div className="space-y-1 lg:col-span-4">
                 <Label htmlFor="vesselVoyDetails" className="text-xs font-medium">Vessel/Voyage Details</Label>
                 <Input
                   id="vesselVoyDetails"
@@ -389,36 +507,39 @@ export default function CreateJob() {
               </div>
             </div>
 
-            {/* Full Width Fields */}
+            {/* Full Width Fields with Entity Dropdowns */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
               <div className="space-y-1">
                 <Label htmlFor="consigneeDetails" className="text-xs font-medium">Consignee Details</Label>
-                <Textarea
-                  id="consigneeDetails"
+                <FilterableSelect
+                  options={consigneeOptions}
                   value={formData.consigneeDetails}
-                  onChange={(e) => handleInputChange("consigneeDetails", e.target.value)}
-                  placeholder="CROWNWELL INTERNATIONAL"
-                  className="min-h-[60px] text-sm resize-none"
+                  onValueChange={(value) => handleInputChange("consigneeDetails", value)}
+                  placeholder="Select or search consignee"
+                  searchPlaceholder="Search consignees..."
+                  className="h-8 text-sm w-full"
                 />
               </div>
               <div className="space-y-1">
                 <Label htmlFor="shipperDetails" className="text-xs font-medium">Shipper Details</Label>
-                <Textarea
-                  id="shipperDetails"
+                <FilterableSelect
+                  options={shipperOptions}
                   value={formData.shipperDetails}
-                  onChange={(e) => handleInputChange("shipperDetails", e.target.value)}
-                  placeholder="GINKO FILM"
-                  className="min-h-[60px] text-sm resize-none"
+                  onValueChange={(value) => handleInputChange("shipperDetails", value)}
+                  placeholder="Select or search shipper"
+                  searchPlaceholder="Search shippers..."
+                  className="h-8 text-sm w-full"
                 />
               </div>
               <div className="space-y-1">
                 <Label htmlFor="overseasAgentDetails" className="text-xs font-medium">Overseas Agent Details</Label>
-                <Textarea
-                  id="overseasAgentDetails"
+                <FilterableSelect
+                  options={agentOptions}
                   value={formData.overseasAgentDetails}
-                  onChange={(e) => handleInputChange("overseasAgentDetails", e.target.value)}
-                  placeholder="ORIENTAL VANGUARD LOGISTICS CO LTD"
-                  className="min-h-[60px] text-sm resize-none"
+                  onValueChange={(value) => handleInputChange("overseasAgentDetails", value)}
+                  placeholder="Select or search overseas agent"
+                  searchPlaceholder="Search overseas agents..."
+                  className="h-8 text-sm w-full"
                 />
               </div>
               <div className="space-y-1">

@@ -6,12 +6,12 @@ import {
   onAuthStateChanged,
   User as FirebaseUser
 } from 'firebase/auth';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc, collection, query, where, getDocs, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { auth, db } from '@/config/firebase';
 import { User, AuthState } from '@/types/auth';
 
 interface AuthContextType extends AuthState {
-  login: (email: string, password: string) => Promise<void>;
+  login: (userId: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
 }
 
@@ -29,45 +29,33 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (firebaseUser) {
         try {
           console.log('Fetching user document for:', firebaseUser.uid);
-          const userDoc = await getDoc(doc(db, 'users', firebaseUser.uid));
+          const userDoc = await getDoc(doc(db, 'user_credentials', firebaseUser.uid));
           
-          let userData;
           if (userDoc.exists()) {
             console.log('User document found:', userDoc.data());
-            userData = userDoc.data();
-          } else {
-            console.log('User document not found, creating default user data');
-            // If user document doesn't exist, create a default user
-            userData = {
-              role: 'rms', // default role
-              createdAt: new Date(),
-              createdBy: 'system'
+            const userData = userDoc.data();
+            
+            const newUser = {
+              id: firebaseUser.uid,
+              email: firebaseUser.email!,
+              role: userData.role === 'admin' ? 'superadmin' : 'rms',
+              firstName: userData.firstName || '',
+              lastName: userData.lastName || '',
+              shortName: userData.userId || '',
+              permissions: userData.permissions || {},
+              createdAt: userData.createdAt?.toDate ? userData.createdAt.toDate() : userData.createdAt,
+              createdBy: userData.createdBy
             };
+            
+            console.log('Setting user state:', newUser);
+            setUser(newUser);
+          } else {
+            throw new Error('User data not found');
           }
-          
-          const newUser = {
-            id: firebaseUser.uid,
-            email: firebaseUser.email!,
-            role: userData.role,
-            createdAt: userData.createdAt?.toDate ? userData.createdAt.toDate() : userData.createdAt,
-            createdBy: userData.createdBy
-          };
-          
-          console.log('Setting user state:', newUser);
-          setUser(newUser);
         } catch (err) {
           console.error('Error fetching user data:', err);
-          // Even if there's an error, set a basic user object so login can proceed
-          const basicUser = {
-            id: firebaseUser.uid,
-            email: firebaseUser.email!,
-            role: 'rms' as const,
-            createdAt: new Date(),
-            createdBy: 'system'
-          };
-          console.log('Setting basic user due to error:', basicUser);
-          setUser(basicUser);
-          setError('Failed to load complete user data, using basic profile');
+          setError('Failed to load user data');
+          await signOut(auth);
         }
       } else {
         console.log('No user, setting user to null');
@@ -79,19 +67,84 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return unsubscribe;
   }, []);
 
-  const login = async (email: string, password: string) => {
+  const login = async (userId: string, password: string) => {
     try {
       setError(null);
       setLoading(true);
-      console.log('Attempting login for:', email);
-      const result = await signInWithEmailAndPassword(auth, email, password);
-      console.log('Login successful:', result.user.uid);
+      console.log('Attempting login for:', userId);
+
+      // Check if input contains 'Superadmin' (admin login)
+      const isAdmin = userId.includes('Superadmin');
+
+      if (isAdmin) {
+        // Admin login with email
+        const result = await signInWithEmailAndPassword(auth, userId, password);
+        console.log('Admin login successful:', result.user.uid);
+        
+        const userDoc = await getDoc(doc(db, 'user_credentials', result.user.uid));
+        if (!userDoc.exists()) {
+          throw new Error('User data not found');
+        }
+      } else {
+        // RM login with shortName
+        console.log('RM login attempt with shortName:', userId.toLowerCase());
+        
+        // First check in relationship_managers collection
+        const rmQuery = query(
+          collection(db, 'relationship_managers'),
+          where('shortName', '==', userId.toLowerCase())
+        );
+        const rmSnapshot = await getDocs(rmQuery);
+
+        if (rmSnapshot.empty) {
+          throw new Error('Invalid User ID');
+        }
+
+        const rmDoc = rmSnapshot.docs[0];
+        const rmData = rmDoc.data();
+        
+        // Verify password
+        if (rmData.password !== password) {
+          throw new Error('Incorrect password');
+        }
+
+        // Check if RM is active
+        if (rmData.status?.toLowerCase() !== 'active') {
+          throw new Error('Account is not active');
+        }
+
+        // Update last login
+        await updateDoc(doc(db, 'relationship_managers', rmDoc.id), {
+          lastLogin: serverTimestamp(),
+        });
+        
+        await updateDoc(doc(db, 'user_credentials', rmDoc.id), {
+          lastLogin: serverTimestamp(),
+        });
+
+        // For RM login, we need to manually set the user since Firebase Auth wasn't used
+        const newUser = {
+          id: rmDoc.id,
+          email: rmData.email || '',
+          role: 'rms' as const,
+          firstName: rmData.firstName || '',
+          lastName: rmData.lastName || '',
+          shortName: rmData.shortName || '',
+          permissions: rmData.permissions || {},
+          createdAt: rmData.createdAt?.toDate ? rmData.createdAt.toDate() : rmData.createdAt,
+          createdBy: rmData.createdBy
+        };
+        
+        console.log('RM login successful, setting user:', newUser);
+        setUser(newUser);
+        setLoading(false);
+        return;
+      }
     } catch (err: any) {
       console.error('Login error:', err);
       setError(err.message);
-      throw err;
-    } finally {
       setLoading(false);
+      throw err;
     }
   };
 

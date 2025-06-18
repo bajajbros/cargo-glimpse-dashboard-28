@@ -33,7 +33,6 @@ export interface Job {
 }
 
 export interface JobFormData {
-  jobNumber: string;
   bookingNo: string;
   invoiceNo: string;
   status: string;

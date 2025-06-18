@@ -53,6 +53,13 @@ const App = () => (
                 </Layout>
               </ProtectedRoute>
             } />
+            <Route path="/manage-entities" element={
+              <ProtectedRoute>
+                <Layout>
+                  <ManageEntities />
+                </Layout>
+              </ProtectedRoute>
+            } />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>
