@@ -39,6 +39,7 @@ interface LayoutProps {
 
 export function Layout({ children }: LayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sidebarHovered, setSidebarHovered] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
   const { user, logout } = useAuth();
@@ -87,46 +88,77 @@ export function Layout({ children }: LayoutProps) {
   const allNavigationItems = getFilteredNavigationItems();
 
   const SidebarContent = () => (
-    <div className="flex h-full flex-col bg-gradient-to-b from-blue-600 to-blue-800 border-r shadow-lg">
-      <div className="flex h-16 items-center border-b border-blue-500 px-6">
-        <h2 className="text-xl font-bold text-white">Logistics Hub</h2>
+    <div 
+      className={cn(
+        "flex h-full flex-col bg-gray-900 border-r border-gray-800 transition-all duration-300",
+        sidebarHovered || sidebarOpen ? "w-64" : "w-16"
+      )}
+      onMouseEnter={() => setSidebarHovered(true)}
+      onMouseLeave={() => setSidebarHovered(false)}
+    >
+      <div className="flex h-16 items-center border-b border-gray-800 px-4">
+        <h2 className={cn(
+          "text-xl font-bold text-white transition-all duration-300",
+          sidebarHovered || sidebarOpen ? "opacity-100" : "opacity-0"
+        )}>
+          Logistics Hub
+        </h2>
       </div>
-      <nav className="flex-1 space-y-2 p-4">
+      <nav className="flex-1 space-y-1 p-2">
         {allNavigationItems.map((item) => {
           const Icon = item.icon;
+          const isActive = location.pathname === item.href;
           return (
             <Link
               key={item.href}
               to={item.href}
               className={cn(
-                "flex items-center space-x-3 rounded-lg px-4 py-3 text-sm font-medium transition-all duration-200",
-                location.pathname === item.href
-                  ? "bg-white text-blue-800 shadow-md"
-                  : "text-blue-100 hover:bg-blue-700 hover:text-white"
+                "flex items-center space-x-3 rounded-lg px-3 py-2 text-sm font-medium transition-all duration-200",
+                isActive
+                  ? "bg-gray-800 text-white shadow-sm"
+                  : "text-gray-300 hover:bg-gray-800 hover:text-white"
               )}
               onClick={() => setSidebarOpen(false)}
             >
-              <Icon className="h-5 w-5" />
-              <span>{item.title}</span>
+              <Icon className="h-5 w-5 flex-shrink-0" />
+              <span className={cn(
+                "transition-all duration-300",
+                sidebarHovered || sidebarOpen ? "opacity-100" : "opacity-0 w-0"
+              )}>
+                {item.title}
+              </span>
             </Link>
           );
         })}
       </nav>
-      <div className="border-t border-blue-500 p-4">
-        <div className="text-xs text-blue-200 mb-1">
-          {user?.firstName} {user?.lastName}
-        </div>
-        <div className="text-xs text-blue-300 mb-4">
-          {user?.email} • {user?.role}
+      <div className="border-t border-gray-800 p-4">
+        <div className={cn(
+          "transition-all duration-300",
+          sidebarHovered || sidebarOpen ? "opacity-100" : "opacity-0"
+        )}>
+          <div className="text-xs text-gray-400 mb-1">
+            {user?.firstName} {user?.lastName}
+          </div>
+          <div className="text-xs text-gray-500 mb-4">
+            {user?.email} • {user?.role}
+          </div>
         </div>
         <Button
           onClick={handleLogout}
           variant="ghost"
           size="sm"
-          className="w-full justify-start text-blue-100 hover:bg-blue-700 hover:text-white"
+          className={cn(
+            "text-gray-300 hover:bg-gray-800 hover:text-white transition-all duration-300",
+            sidebarHovered || sidebarOpen ? "w-full justify-start" : "w-10 h-10 p-0 justify-center"
+          )}
         >
-          <LogOut className="h-4 w-4 mr-2" />
-          Logout
+          <LogOut className="h-4 w-4" />
+          <span className={cn(
+            "ml-2 transition-all duration-300",
+            sidebarHovered || sidebarOpen ? "opacity-100" : "opacity-0 w-0"
+          )}>
+            Logout
+          </span>
         </Button>
       </div>
     </div>
@@ -135,13 +167,13 @@ export function Layout({ children }: LayoutProps) {
   return (
     <div className="flex h-screen bg-gray-50">
       {/* Desktop Sidebar */}
-      <aside className="hidden w-64 lg:block">
+      <aside className="hidden lg:block">
         <SidebarContent />
       </aside>
 
       {/* Mobile Sidebar */}
       <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
-        <SheetContent side="left" className="w-64 p-0">
+        <SheetContent side="left" className="w-64 p-0 bg-gray-900">
           <SidebarContent />
         </SheetContent>
       </Sheet>

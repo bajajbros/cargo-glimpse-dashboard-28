@@ -9,7 +9,7 @@ export interface Job {
   modeOfShipment: 'Sea' | 'Air' | 'Road' | 'Rail';
   shipmentType: 'Import' | 'Export';
   lclFclAir: 'LCL' | 'FCL' | 'Air';
-  containerFlightNumbers: string[]; // Changed to array
+  containerFlightNumbers: string[];
   portOfLoading: string;
   finalDestination: string;
   etaPod: string;
@@ -40,7 +40,7 @@ export interface JobFormData {
   modeOfShipment: string;
   shipmentType: string;
   lclFclAir: string;
-  containerFlightNumbers: string[]; // Changed to array
+  containerFlightNumbers: string[];
   portOfLoading: string;
   finalDestination: string;
   etaPod: string;

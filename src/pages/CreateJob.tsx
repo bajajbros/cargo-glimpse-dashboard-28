@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { Save } from "lucide-react";
+import { Save, Plus, X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { collection, addDoc, serverTimestamp, getDocs, query, orderBy, limit } from "firebase/firestore";
@@ -32,7 +32,7 @@ export default function CreateJob() {
   const [formData, setFormData] = useState<JobFormData>({
     bookingNo: "",
     consigneeDetails: "",
-    containerFlightNo: "",
+    containerFlightNumbers: [],
     etaPod: "",
     finalDestination: "",
     grossWeight: "",
@@ -56,6 +56,8 @@ export default function CreateJob() {
     vesselVoyDetails: "",
     airShippingLine: "",
   });
+
+  const [newContainerNumber, setNewContainerNumber] = useState("");
 
   // Entity options for dropdowns
   const [shippers, setShippers] = useState<Entity[]>([]);
@@ -161,6 +163,23 @@ export default function CreateJob() {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
+  const addContainerNumber = () => {
+    if (newContainerNumber.trim()) {
+      setFormData(prev => ({
+        ...prev,
+        containerFlightNumbers: [...prev.containerFlightNumbers, newContainerNumber.trim()]
+      }));
+      setNewContainerNumber("");
+    }
+  };
+
+  const removeContainerNumber = (index: number) => {
+    setFormData(prev => ({
+      ...prev,
+      containerFlightNumbers: prev.containerFlightNumbers.filter((_, i) => i !== index)
+    }));
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -196,7 +215,7 @@ export default function CreateJob() {
       setFormData({
         bookingNo: "",
         consigneeDetails: "",
-        containerFlightNo: "",
+        containerFlightNumbers: [],
         etaPod: "",
         finalDestination: "",
         grossWeight: "",
@@ -220,6 +239,7 @@ export default function CreateJob() {
         vesselVoyDetails: "",
         airShippingLine: "",
       });
+      setNewContainerNumber("");
     } catch (error) {
       console.error("Error creating job:", error);
       toast({
@@ -241,11 +261,11 @@ export default function CreateJob() {
 
   return (
     <div className="p-3 h-full overflow-auto">
-      <Card className="max-w-7xl mx-auto">
+      <Card className="max-w-7xl mx-auto shadow-sm">
         <CardHeader className="pb-3">
           <div className="flex items-center justify-between">
             <div>
-              <CardTitle className="flex items-center gap-2 text-lg">
+              <CardTitle className="flex items-center gap-2 text-lg text-gray-900">
                 Create New Job
               </CardTitle>
               <CardDescription className="text-sm">
@@ -258,10 +278,10 @@ export default function CreateJob() {
           </div>
         </CardHeader>
         <CardContent className="p-4">
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-6">
             {/* Grid Layout for Maximum Space Utilization */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
-              {/* Row 1 - Job Number removed, other fields remain */}
+              
               <div className="space-y-1">
                 <Label htmlFor="bookingNo" className="text-xs font-medium">Booking Number</Label>
                 <Input
@@ -308,8 +328,7 @@ export default function CreateJob() {
                   className="h-8 text-sm"
                 />
               </div>
-
-              {/* Continue with remaining fields... */}
+              
               <div className="space-y-1">
                 <Label htmlFor="airShippingLine" className="text-xs font-medium">Air/Shipping Line</Label>
                 <Input
@@ -363,17 +382,7 @@ export default function CreateJob() {
                 />
               </div>
 
-              {/* Continue with more fields... keeping the existing layout but using FilterableSelect where appropriate */}
-              <div className="space-y-1">
-                <Label htmlFor="containerFlightNo" className="text-xs font-medium">Container/Flight No</Label>
-                <Input
-                  id="containerFlightNo"
-                  value={formData.containerFlightNo}
-                  onChange={(e) => handleInputChange("containerFlightNo", e.target.value)}
-                  placeholder="ONEU0044026"
-                  className="h-8 text-sm"
-                />
-              </div>
+              
               <div className="space-y-1">
                 <Label htmlFor="portOfLoading" className="text-xs font-medium">Port of Loading</Label>
                 <Input
@@ -405,7 +414,7 @@ export default function CreateJob() {
                 />
               </div>
 
-              {/* Row 4 */}
+              
               <div className="space-y-1">
                 <Label htmlFor="grossWeight" className="text-xs font-medium">Gross Weight</Label>
                 <Input
@@ -452,7 +461,7 @@ export default function CreateJob() {
                 />
               </div>
 
-              {/* Row 5 */}
+              
               <div className="space-y-1">
                 <Label htmlFor="hblNo" className="text-xs font-medium">HBL Number</Label>
                 <Input
@@ -494,7 +503,7 @@ export default function CreateJob() {
                 />
               </div>
 
-              {/* Row 6 */}
+              
               <div className="space-y-1 lg:col-span-4">
                 <Label htmlFor="vesselVoyDetails" className="text-xs font-medium">Vessel/Voyage Details</Label>
                 <Input
@@ -505,6 +514,46 @@ export default function CreateJob() {
                   className="h-8 text-sm"
                 />
               </div>
+            </div>
+
+            {/* Container/Flight Numbers Section */}
+            <div className="space-y-3">
+              <Label className="text-sm font-medium">Container/Flight Numbers</Label>
+              <div className="flex gap-2">
+                <Input
+                  value={newContainerNumber}
+                  onChange={(e) => setNewContainerNumber(e.target.value)}
+                  placeholder="Enter container/flight number"
+                  className="h-8 text-sm"
+                  onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addContainerNumber())}
+                />
+                <Button
+                  type="button"
+                  onClick={addContainerNumber}
+                  size="sm"
+                  className="h-8 px-3"
+                >
+                  <Plus className="h-4 w-4" />
+                </Button>
+              </div>
+              {formData.containerFlightNumbers.length > 0 && (
+                <div className="border rounded-lg p-3 bg-gray-50">
+                  <div className="flex flex-wrap gap-2">
+                    {formData.containerFlightNumbers.map((number, index) => (
+                      <div key={index} className="flex items-center gap-1 bg-white px-2 py-1 rounded border text-sm">
+                        <span>{number}</span>
+                        <button
+                          type="button"
+                          onClick={() => removeContainerNumber(index)}
+                          className="text-red-500 hover:text-red-700"
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Full Width Fields with Entity Dropdowns */}
@@ -559,7 +608,7 @@ export default function CreateJob() {
               <Button type="button" variant="outline" size="sm">
                 Save as Draft
               </Button>
-              <Button type="submit" size="sm">
+              <Button type="submit" size="sm" className="bg-gray-900 hover:bg-gray-800">
                 <Save className="w-3 h-3 mr-1" />
                 Create Job
               </Button>
