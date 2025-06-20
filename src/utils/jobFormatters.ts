@@ -66,10 +66,21 @@ export const formatCellValue = (job: Job, columnKey: string): string => {
 export const formatContainerNumbers = (job: Job): string => {
   const value = job.containerFlightNumbers;
   
+  // Handle null/undefined
+  if (value == null) {
+    return '';
+  }
+  
+  // Handle array format (new format)
   if (Array.isArray(value)) {
     return value.join(', ');
-  } else if (typeof value === 'string' && value.trim()) {
-    return value;
   }
+  
+  // Handle string format (old format) - add explicit type check
+  if (typeof value === 'string') {
+    return value.trim() || '';
+  }
+  
+  // Fallback for any other type
   return '';
 };
