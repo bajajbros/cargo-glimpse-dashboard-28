@@ -16,7 +16,7 @@ export interface Job {
   grossWeight: string;
   netWeight: string;
   totalPackages: string;
-  terms: 'FOB' | 'CIF' | 'CFR' | 'EXW';
+  terms: string; // Changed from enum to string
   hblNo: string;
   hblDate: string;
   mblNo: string;

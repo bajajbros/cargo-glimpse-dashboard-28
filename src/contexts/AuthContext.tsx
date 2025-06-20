@@ -23,6 +23,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    // Check for stored user session
+    const storedUser = localStorage.getItem('currentUser');
+    if (storedUser) {
+      try {
+        const userData = JSON.parse(storedUser);
+        setUser(userData);
+      } catch (error) {
+        console.error('Error parsing stored user:', error);
+        localStorage.removeItem('currentUser');
+      }
+    }
+
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser: FirebaseUser | null) => {
       console.log('Auth state changed:', firebaseUser ? 'User logged in' : 'User logged out');
       
@@ -49,9 +61,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             
             console.log('Setting user state:', newUser);
             setUser(newUser);
+            localStorage.setItem('currentUser', JSON.stringify(newUser));
           } else {
-            // Even if user document doesn't exist, still set basic user data
-            console.log('User document not found, creating basic user');
             const basicUser: User = {
               id: firebaseUser.uid,
               email: firebaseUser.email!,
@@ -64,11 +75,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               createdBy: ''
             };
             setUser(basicUser);
+            localStorage.setItem('currentUser', JSON.stringify(basicUser));
           }
         } catch (err) {
           console.error('Error fetching user data:', err);
           setError('Failed to load user data');
-          // Don't sign out on error, just set basic user data
           const basicUser: User = {
             id: firebaseUser.uid,
             email: firebaseUser.email!,
@@ -81,10 +92,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             createdBy: ''
           };
           setUser(basicUser);
+          localStorage.setItem('currentUser', JSON.stringify(basicUser));
         }
       } else {
         console.log('No user, setting user to null');
         setUser(null);
+        localStorage.removeItem('currentUser');
       }
       setLoading(false);
     });
@@ -98,11 +111,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setLoading(true);
       console.log('Attempting login for:', userId);
 
-      // Check if input contains 'Superadmin' (admin login)
       const isAdmin = userId.includes('Superadmin');
 
       if (isAdmin) {
-        // Admin login with email
         const result = await signInWithEmailAndPassword(auth, userId, password);
         console.log('Admin login successful:', result.user.uid);
         
@@ -111,10 +122,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           throw new Error('User data not found');
         }
       } else {
-        // RM login with shortName
         console.log('RM login attempt with shortName:', userId.toLowerCase());
         
-        // First check in relationship_managers collection
         const rmQuery = query(
           collection(db, 'relationship_managers'),
           where('shortName', '==', userId.toLowerCase())
@@ -128,17 +137,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const rmDoc = rmSnapshot.docs[0];
         const rmData = rmDoc.data();
         
-        // Verify password
         if (rmData.password !== password) {
           throw new Error('Incorrect password');
         }
 
-        // Check if RM is active
         if (rmData.status?.toLowerCase() !== 'active') {
           throw new Error('Account is not active');
         }
 
-        // Update last login
         await updateDoc(doc(db, 'relationship_managers', rmDoc.id), {
           lastLogin: serverTimestamp(),
         });
@@ -147,7 +153,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           lastLogin: serverTimestamp(),
         });
 
-        // For RM login, we need to manually set the user since Firebase Auth wasn't used
         const newUser: User = {
           id: rmDoc.id,
           email: rmData.email || '',
@@ -162,6 +167,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         
         console.log('RM login successful, setting user:', newUser);
         setUser(newUser);
+        localStorage.setItem('currentUser', JSON.stringify(newUser));
         setLoading(false);
         return;
       }
@@ -177,6 +183,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       await signOut(auth);
       setUser(null);
+      localStorage.removeItem('currentUser');
     } catch (err: any) {
       setError(err.message);
       throw err;
