@@ -144,10 +144,10 @@ export default function ViewJobs() {
   };
 
   return (
-    <div className="p-6 h-full overflow-auto bg-gray-50">
-      <Card className="max-w-full mx-auto shadow-lg">
+    <div className="p-6 h-full overflow-hidden bg-gray-50 flex flex-col">
+      <Card className="flex-1 flex flex-col shadow-lg overflow-hidden">
         <CardHeader className="pb-4 bg-white border-b">
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between mb-4">
             <div>
               <CardTitle className="flex items-center gap-2 text-2xl font-bold text-gray-800">
                 <FileText className="w-7 h-7 text-blue-600" />
@@ -179,32 +179,37 @@ export default function ViewJobs() {
               </Button>
             </div>
           </div>
+
+          {/* Moved filters and column selector to header */}
+          <div className="space-y-4">
+            <JobFilters
+              filters={filters}
+              onFilterChange={handleFilterChange}
+              onClearFilters={clearFilters}
+              uniqueValues={uniqueValues}
+              filtersOpen={filtersOpen}
+              setFiltersOpen={setFiltersOpen}
+            />
+
+            <div className="flex items-center justify-end">
+              <ColumnSelector
+                allColumns={allColumns}
+                selectedColumns={selectedColumns}
+                onColumnSelection={handleColumnSelection}
+              />
+            </div>
+          </div>
         </CardHeader>
         
-        <CardContent className="p-6 bg-white">
-          <JobFilters
-            filters={filters}
-            onFilterChange={handleFilterChange}
-            onClearFilters={clearFilters}
-            uniqueValues={uniqueValues}
-            filtersOpen={filtersOpen}
-            setFiltersOpen={setFiltersOpen}
-          />
-
-          <div className="flex items-center justify-end mb-4">
-            <ColumnSelector
-              allColumns={allColumns}
+        <CardContent className="p-6 bg-white flex-1 overflow-hidden">
+          <div className="h-full">
+            <JobsTable
+              jobs={filteredJobs}
               selectedColumns={selectedColumns}
-              onColumnSelection={handleColumnSelection}
+              allColumns={allColumns}
+              onEditJob={handleEditJob}
             />
           </div>
-
-          <JobsTable
-            jobs={filteredJobs}
-            selectedColumns={selectedColumns}
-            allColumns={allColumns}
-            onEditJob={handleEditJob}
-          />
         </CardContent>
       </Card>
     </div>

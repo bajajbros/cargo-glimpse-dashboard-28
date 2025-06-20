@@ -79,8 +79,11 @@ export const formatContainerNumbers = (job: Job): string => {
   
   // Check for old field name (containerFlightNo) for backward compatibility
   const oldValue = (job as any).containerFlightNo;
-  if (typeof oldValue === 'string' && oldValue.trim()) {
-    return oldValue.trim();
+  if (oldValue !== null && oldValue !== undefined && typeof oldValue === 'string') {
+    const trimmedValue = oldValue.trim();
+    if (trimmedValue) {
+      return trimmedValue;
+    }
   }
   
   // No container numbers found

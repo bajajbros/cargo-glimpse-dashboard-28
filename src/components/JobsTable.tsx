@@ -3,7 +3,6 @@ import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { Label } from '@/components/ui/label';
 import { Eye, Edit, FileText, Printer } from 'lucide-react';
 import { Job } from '@/types/job';
@@ -46,20 +45,20 @@ export const JobsTable: React.FC<JobsTableProps> = ({
   };
 
   return (
-    <div className="w-full">
-      {/* Container with always visible horizontal scrollbar */}
-      <div className="border rounded-lg shadow-sm overflow-x-auto">
-        {/* Inner container for vertical scrolling */}
-        <div className="max-h-[600px] overflow-y-auto">
+    <div className="w-full h-full">
+      {/* Table container with both horizontal and vertical scrolling */}
+      <div className="border rounded-lg shadow-sm h-full flex flex-col overflow-hidden">
+        {/* Scrollable container */}
+        <div className="flex-1 overflow-auto">
           <Table>
-            <TableHeader className="sticky top-0 z-10 bg-white shadow-sm">
+            <TableHeader className="sticky top-0 z-20 bg-white shadow-sm">
               <TableRow className="bg-gradient-to-r from-gray-50 to-gray-100">
                 {selectedColumns.map(column => (
                   <TableHead key={column} className="px-4 py-3 text-sm font-semibold text-gray-700 border-r last:border-r-0 whitespace-nowrap">
                     {column.replace(/([A-Z])/g, ' $1').trim()}
                   </TableHead>
                 ))}
-                <TableHead className="px-4 py-3 text-sm font-semibold text-gray-700 text-center bg-gradient-to-r from-gray-50 to-gray-100 border-l">
+                <TableHead className="px-4 py-3 text-sm font-semibold text-gray-700 text-center bg-gradient-to-r from-gray-50 to-gray-100 border-l whitespace-nowrap">
                   Actions
                 </TableHead>
               </TableRow>
@@ -70,14 +69,16 @@ export const JobsTable: React.FC<JobsTableProps> = ({
                   {selectedColumns.map(column => (
                     <TableCell 
                       key={`${job.id}-${column}`} 
-                      className={`px-4 py-3 text-sm border-r last:border-r-0 whitespace-pre-wrap ${
-                        column === 'containerFlightNumbers' ? 'min-h-[4rem]' : 'max-w-32 truncate'
+                      className={`px-4 py-3 text-sm border-r last:border-r-0 whitespace-nowrap ${
+                        column === 'containerFlightNumbers' 
+                          ? 'whitespace-pre-wrap min-w-[200px] max-w-[300px]' 
+                          : 'max-w-32 truncate'
                       }`}
                     >
                       {renderCellValue(job, column)}
                     </TableCell>
                   ))}
-                  <TableCell className="px-4 py-3 text-sm text-center bg-white border-l">
+                  <TableCell className="px-4 py-3 text-sm text-center border-l whitespace-nowrap">
                     <div className="flex justify-center space-x-2">
                       <Dialog>
                         <DialogTrigger asChild>
