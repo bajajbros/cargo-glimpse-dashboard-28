@@ -1,0 +1,73 @@
+
+@media print {
+  * {
+    -webkit-print-color-adjust: exact !important;
+    color-adjust: exact !important;
+  }
+  
+  body {
+    background: white !important;
+  }
+  
+  .print\\:hidden {
+    display: none !important;
+  }
+  
+  .print\\:max-w-none {
+    max-width: none !important;
+  }
+  
+  .print\\:max-h-none {
+    max-height: none !important;
+  }
+  
+  .print\\:overflow-visible {
+    overflow: visible !important;
+  }
+  
+  .print\\:grid-cols-2 {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+  
+  /* Hide unnecessary elements during print */
+  [data-radix-dialog-overlay] {
+    background: transparent !important;
+  }
+  
+  /* Ensure dialog content takes full width when printing */
+  [data-radix-dialog-content] {
+    position: static !important;
+    transform: none !important;
+    max-width: none !important;
+    margin: 0 !important;
+    box-shadow: none !important;
+    border: 1px solid #ccc !important;
+  }
+  
+  /* Better spacing for print */
+  .space-y-2 > * + * {
+    margin-top: 0.5rem !important;
+  }
+  
+  .gap-4 {
+    gap: 1rem !important;
+  }
+  
+  /* Ensure text is black */
+  .text-gray-700,
+  .text-gray-600,
+  .text-gray-800 {
+    color: #000 !important;
+  }
+  
+  /* Better borders for print */
+  .border,
+  .rounded-md {
+    border: 1px solid #ccc !important;
+    border-radius: 4px !important;
+  }
+  
+  .bg-gray-50 {
+    background-color: #f9f9f9 !important;
+  }
+}

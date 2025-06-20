@@ -12,7 +12,14 @@ export const formatCellValue = (job: Job, columnKey: string): string => {
   // Handle specific column types
   switch (columnKey) {
     case 'containerFlightNumbers':
-      return Array.isArray(value) ? value.join(', ') : '';
+      // Handle both old string format and new array format
+      if (Array.isArray(value)) {
+        return value.join(', ');
+      } else if (typeof value === 'string' && value.trim()) {
+        // Handle old format where it was stored as a string
+        return value;
+      }
+      return '';
     
     case 'createdAt':
     case 'updatedAt':
@@ -53,4 +60,16 @@ export const formatCellValue = (job: Job, columnKey: string): string => {
       }
       return String(value || '');
   }
+};
+
+// New function specifically for displaying container numbers with proper formatting
+export const formatContainerNumbers = (job: Job): string => {
+  const value = job.containerFlightNumbers;
+  
+  if (Array.isArray(value)) {
+    return value.join(', ');
+  } else if (typeof value === 'string' && value.trim()) {
+    return value;
+  }
+  return '';
 };

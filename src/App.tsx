@@ -14,6 +14,7 @@ import Login from "./pages/Login";
 import ManageUsers from "./pages/ManageUsers";
 import ManageEntities from "./pages/ManageEntities";
 import NotFound from "./pages/NotFound";
+import "./styles/print.css";
 
 const queryClient = new QueryClient();
 
