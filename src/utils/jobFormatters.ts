@@ -64,23 +64,25 @@ export const formatCellValue = (job: Job, columnKey: string): string => {
 
 // New function specifically for displaying container numbers with proper formatting
 export const formatContainerNumbers = (job: Job): string => {
-  const value = job.containerFlightNumbers;
+  // First check the new format (containerFlightNumbers array)
+  const newValue = job.containerFlightNumbers;
   
-  // Handle null/undefined
-  if (value == null) {
-    return '';
+  // Handle new array format
+  if (Array.isArray(newValue) && newValue.length > 0) {
+    return newValue.join(', ');
   }
   
-  // Handle array format (new format)
-  if (Array.isArray(value)) {
-    return value.join(', ');
+  // Handle old string format (containerFlightNumbers as string)
+  if (typeof newValue === 'string' && newValue.trim()) {
+    return newValue.trim();
   }
   
-  // Handle string format (old format) - add explicit type check
-  if (typeof value === 'string') {
-    return value.trim() || '';
+  // Check for old field name (containerFlightNo) for backward compatibility
+  const oldValue = (job as any).containerFlightNo;
+  if (typeof oldValue === 'string' && oldValue.trim()) {
+    return oldValue.trim();
   }
   
-  // Fallback for any other type
+  // No container numbers found
   return '';
 };
