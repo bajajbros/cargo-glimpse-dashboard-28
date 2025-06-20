@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -322,22 +323,18 @@ export default function CreateJob() {
   if (isLoading) {
     return (
       <div className="p-4 h-full flex items-center justify-center">
-        <div className="text-center animate-fade-in">
-          <Loader2 className="w-12 h-12 animate-spin mx-auto mb-4 text-blue-600" />
-          <div className="space-y-2">
-            <div className="h-2 bg-gray-200 rounded animate-pulse w-32 mx-auto"></div>
-            <div className="h-2 bg-gray-200 rounded animate-pulse w-24 mx-auto"></div>
-          </div>
-          <p className="text-muted-foreground mt-4">Loading form data...</p>
+        <div className="text-center">
+          <Loader2 className="w-12 h-12 animate-spin mx-auto mb-4" />
+          <p className="text-muted-foreground">Loading form data...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="p-3 h-full overflow-auto bg-gradient-to-br from-blue-50 to-indigo-100">
-      <Card className="max-w-full mx-auto shadow-xl bg-white border-0">
-        <CardHeader className="pb-4 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-t-lg">
+    <div className="p-4 h-full overflow-auto">
+      <Card className="max-w-full mx-auto">
+        <CardHeader className="pb-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
               {isEditMode && (
@@ -345,40 +342,39 @@ export default function CreateJob() {
                   variant="ghost" 
                   size="sm" 
                   onClick={() => navigate('/view-jobs')}
-                  className="text-white hover:bg-white/10"
                 >
                   <ArrowLeft className="w-4 h-4" />
                 </Button>
               )}
               <div>
-                <CardTitle className="text-xl font-bold">
+                <CardTitle className="text-xl">
                   {isEditMode ? `Edit Job - ${editJob?.jobNumber}` : 'Create New Job'}
                 </CardTitle>
-                <CardDescription className="text-blue-100 mt-1">
+                <CardDescription>
                   {isEditMode ? 'Update job details' : 'Complete all fields to create a new logistics job'}
                 </CardDescription>
               </div>
             </div>
           </div>
         </CardHeader>
-        <CardContent className="p-4">
-          <form onSubmit={handleSubmit} className="space-y-4">
-            {/* Compact Grid Layout - All fields in organized rows */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
-              {/* Row 1 */}
-              <div className="space-y-1">
-                <Label className="text-xs font-medium text-gray-700">RM Name *</Label>
+        <CardContent className="p-6">
+          <form onSubmit={handleSubmit} className="space-y-6">
+            {/* Grid Layout for all fields */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              {/* RM Name */}
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">RM Name *</Label>
                 <FilterableSelect
                   options={rmOptions}
                   value={formData.rmName}
                   onValueChange={(value) => handleInputChange("rmName", value)}
                   placeholder="Select RM"
-                  className="h-8 text-xs"
                 />
               </div>
 
-              <div className="space-y-1">
-                <Label className="text-xs font-medium text-gray-700">Shipment Type *</Label>
+              {/* Shipment Type */}
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">Shipment Type *</Label>
                 <FilterableSelect
                   options={[
                     { value: "Import", label: "Import" },
@@ -387,12 +383,12 @@ export default function CreateJob() {
                   value={formData.shipmentType}
                   onValueChange={(value) => handleInputChange("shipmentType", value)}
                   placeholder="Select type"
-                  className="h-8 text-xs"
                 />
               </div>
 
-              <div className="space-y-1">
-                <Label className="text-xs font-medium text-gray-700">Mode of Shipment *</Label>
+              {/* Mode of Shipment */}
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">Mode of Shipment *</Label>
                 <FilterableSelect
                   options={[
                     { value: "Air", label: "Air" },
@@ -401,178 +397,224 @@ export default function CreateJob() {
                   value={formData.modeOfShipment}
                   onValueChange={(value) => handleInputChange("modeOfShipment", value)}
                   placeholder="Select mode"
-                  className="h-8 text-xs"
                 />
               </div>
 
-              <div className="space-y-1">
-                <Label className="text-xs font-medium text-gray-700">Shipper Name</Label>
+              {/* Shipper Name */}
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">Shipper Name</Label>
                 <FilterableSelect
                   options={shipperOptions}
                   value={formData.shipperDetails}
                   onValueChange={(value) => handleInputChange("shipperDetails", value)}
                   placeholder="Select shipper"
-                  className="h-8 text-xs"
                 />
               </div>
-            </div>
 
-            {/* Row 2 */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
-              <div className="space-y-1">
-                <Label className="text-xs font-medium text-gray-700">Consignee</Label>
+              {/* Consignee */}
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">Consignee</Label>
                 <FilterableSelect
                   options={consigneeOptions}
                   value={formData.consigneeDetails}
                   onValueChange={(value) => handleInputChange("consigneeDetails", value)}
                   placeholder="Select consignee"
-                  className="h-8 text-xs"
                 />
               </div>
 
-              <div className="space-y-1">
-                <Label className="text-xs font-medium text-gray-700">Overseas Agent</Label>
+              {/* Overseas Agent */}
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">Overseas Agent</Label>
                 <FilterableSelect
                   options={agentOptions}
                   value={formData.overseasAgentDetails}
                   onValueChange={(value) => handleInputChange("overseasAgentDetails", value)}
                   placeholder="Select agent"
-                  className="h-8 text-xs"
                 />
               </div>
 
-              <div className="space-y-1">
-                <Label className="text-xs font-medium text-gray-700">Booking No</Label>
+              {/* Booking No */}
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">Booking No</Label>
                 <Input
                   value={formData.bookingNo}
                   onChange={(e) => handleInputChange("bookingNo", e.target.value)}
                   placeholder="Enter booking number"
-                  className="h-8 text-xs"
                 />
               </div>
 
-              <div className="space-y-1">
-                <Label className="text-xs font-medium text-gray-700">Invoice No</Label>
+              {/* Invoice No */}
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">Invoice No</Label>
                 <Input
                   value={formData.invoiceNo}
                   onChange={(e) => handleInputChange("invoiceNo", e.target.value)}
                   placeholder="Enter invoice number"
-                  className="h-8 text-xs"
                 />
               </div>
-            </div>
 
-            {/* Row 3 */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
-              <div className="space-y-1">
-                <Label className="text-xs font-medium text-gray-700">Gross Weight</Label>
+              {/* Gross Weight */}
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">Gross Weight</Label>
                 <Input
                   value={formData.grossWeight}
                   onChange={(e) => handleInputChange("grossWeight", e.target.value)}
                   placeholder="Enter gross weight"
-                  className="h-8 text-xs"
                 />
               </div>
 
-              <div className="space-y-1">
-                <Label className="text-xs font-medium text-gray-700">Net Weight</Label>
+              {/* Net Weight */}
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">Net Weight</Label>
                 <Input
                   value={formData.netWeight}
                   onChange={(e) => handleInputChange("netWeight", e.target.value)}
                   placeholder="Enter net weight"
-                  className="h-8 text-xs"
                 />
               </div>
 
-              <div className="space-y-1">
-                <Label className="text-xs font-medium text-gray-700">Total Packages</Label>
+              {/* Total Packages */}
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">Total Packages</Label>
                 <Input
                   value={formData.totalPackages}
                   onChange={(e) => handleInputChange("totalPackages", e.target.value)}
                   placeholder="Enter total packages"
-                  className="h-8 text-xs"
                 />
               </div>
 
-              <div className="space-y-1">
-                <Label className="text-xs font-medium text-gray-700">Port Of Loading</Label>
+              {/* Port Of Loading */}
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">Port Of Loading</Label>
                 <Input
                   value={formData.portOfLoading}
                   onChange={(e) => handleInputChange("portOfLoading", e.target.value)}
                   placeholder="Enter port"
-                  className="h-8 text-xs"
                 />
               </div>
-            </div>
 
-            {/* Row 4 */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
-              <div className="space-y-1">
-                <Label className="text-xs font-medium text-gray-700">ETA POD</Label>
+              {/* ETA POD */}
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">ETA POD</Label>
                 <Input
                   type="date"
                   value={formData.etaPod}
                   onChange={(e) => handleInputChange("etaPod", e.target.value)}
-                  className="h-8 text-xs"
                 />
               </div>
 
-              <div className="space-y-1">
-                <Label className="text-xs font-medium text-gray-700">Final Destination</Label>
+              {/* Final Destination */}
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">Final Destination</Label>
                 <Input
                   value={formData.finalDestination}
                   onChange={(e) => handleInputChange("finalDestination", e.target.value)}
                   placeholder="Enter destination"
-                  className="h-8 text-xs"
                 />
               </div>
 
-              <div className="space-y-1">
-                <Label className="text-xs font-medium text-gray-700">Vessel And Voy Details</Label>
+              {/* Vessel And Voy Details */}
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">Vessel And Voy Details</Label>
                 <Input
                   value={formData.vesselVoyDetails}
                   onChange={(e) => handleInputChange("vesselVoyDetails", e.target.value)}
                   placeholder="Enter vessel details"
-                  className="h-8 text-xs"
                 />
               </div>
 
-              <div className="space-y-1">
-                <Label className="text-xs font-medium text-gray-700">Air/Shipping Line</Label>
+              {/* Air/Shipping Line */}
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">Air/Shipping Line</Label>
                 <Input
                   value={formData.airShippingLine}
                   onChange={(e) => handleInputChange("airShippingLine", e.target.value)}
                   placeholder="Enter shipping line"
-                  className="h-8 text-xs"
                 />
+              </div>
+
+              {/* MBL/MAWB No */}
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">MBL/MAWB No</Label>
+                <Input
+                  value={formData.mblNo}
+                  onChange={(e) => handleInputChange("mblNo", e.target.value)}
+                  placeholder="Enter MBL/MAWB number"
+                />
+              </div>
+
+              {/* MBL/MAWB Date */}
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">MBL/MAWB Date</Label>
+                <Input
+                  type="date"
+                  value={formData.mblDate}
+                  onChange={(e) => handleInputChange("mblDate", e.target.value)}
+                />
+              </div>
+
+              {/* HBL/HAWB No */}
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">HBL/HAWB No</Label>
+                <Input
+                  value={formData.hblNo}
+                  onChange={(e) => handleInputChange("hblNo", e.target.value)}
+                  placeholder="Enter HBL/HAWB number"
+                />
+              </div>
+
+              {/* HBL/HAWB Date */}
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">HBL/HAWB Date</Label>
+                <Input
+                  type="date"
+                  value={formData.hblDate}
+                  onChange={(e) => handleInputChange("hblDate", e.target.value)}
+                />
+              </div>
+
+              {/* Terms */}
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">Terms</Label>
+                <Input
+                  value={formData.terms}
+                  onChange={(e) => handleInputChange("terms", e.target.value)}
+                  placeholder="Enter terms"
+                  list="terms-suggestions"
+                />
+                <datalist id="terms-suggestions">
+                  {previousTerms.map((term, index) => (
+                    <option key={index} value={term} />
+                  ))}
+                </datalist>
               </div>
             </div>
 
-            {/* Row 5 - Container Numbers */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+            {/* Container Numbers and Remarks - Full width sections */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Container No/Flight No */}
               <div className="space-y-2">
-                <Label className="text-xs font-medium text-gray-700">Container No/Flight No</Label>
+                <Label className="text-sm font-medium">Container No/Flight No</Label>
                 <div className="flex gap-2">
                   <Input
                     value={newContainerNumber}
                     onChange={(e) => setNewContainerNumber(e.target.value)}
                     placeholder="Enter container/flight number"
-                    className="h-8 text-xs flex-1"
+                    className="flex-1"
                     onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addContainerNumber())}
                   />
                   <Button
                     type="button"
                     onClick={addContainerNumber}
                     size="sm"
-                    className="h-8 px-3"
                   >
-                    <Plus className="h-3 w-3" />
+                    <Plus className="h-4 w-4" />
                   </Button>
                 </div>
                 {formData.containerFlightNumbers.length > 0 && (
-                  <div className="flex flex-wrap gap-1 mt-2">
+                  <div className="flex flex-wrap gap-2 mt-2">
                     {formData.containerFlightNumbers.map((number, index) => (
-                      <div key={index} className="flex items-center gap-1 bg-blue-100 px-2 py-1 rounded text-xs">
+                      <div key={index} className="flex items-center gap-1 bg-gray-100 px-2 py-1 rounded text-sm">
                         <span>{number}</span>
                         <button
                           type="button"
@@ -587,84 +629,24 @@ export default function CreateJob() {
                 )}
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1">
-                  <Label className="text-xs font-medium text-gray-700">MBL/MAWB No</Label>
-                  <Input
-                    value={formData.mblNo}
-                    onChange={(e) => handleInputChange("mblNo", e.target.value)}
-                    placeholder="Enter MBL/MAWB number"
-                    className="h-8 text-xs"
-                  />
-                </div>
-
-                <div className="space-y-1">
-                  <Label className="text-xs font-medium text-gray-700">MBL/MAWB Date</Label>
-                  <Input
-                    type="date"
-                    value={formData.mblDate}
-                    onChange={(e) => handleInputChange("mblDate", e.target.value)}
-                    className="h-8 text-xs"
-                  />
-                </div>
-              </div>
-            </div>
-
-            {/* Row 6 */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
-              <div className="space-y-1">
-                <Label className="text-xs font-medium text-gray-700">HBL/HAWB No</Label>
-                <Input
-                  value={formData.hblNo}
-                  onChange={(e) => handleInputChange("hblNo", e.target.value)}
-                  placeholder="Enter HBL/HAWB number"
-                  className="h-8 text-xs"
-                />
-              </div>
-
-              <div className="space-y-1">
-                <Label className="text-xs font-medium text-gray-700">HBL/HAWB Date</Label>
-                <Input
-                  type="date"
-                  value={formData.hblDate}
-                  onChange={(e) => handleInputChange("hblDate", e.target.value)}
-                  className="h-8 text-xs"
-                />
-              </div>
-
-              <div className="space-y-1">
-                <Label className="text-xs font-medium text-gray-700">Terms</Label>
-                <Input
-                  value={formData.terms}
-                  onChange={(e) => handleInputChange("terms", e.target.value)}
-                  placeholder="Enter terms"
-                  className="h-8 text-xs"
-                  list="terms-suggestions"
-                />
-                <datalist id="terms-suggestions">
-                  {previousTerms.map((term, index) => (
-                    <option key={index} value={term} />
-                  ))}
-                </datalist>
-              </div>
-
-              <div className="space-y-1">
-                <Label className="text-xs font-medium text-gray-700">Remarks</Label>
+              {/* Remarks */}
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">Remarks</Label>
                 <Textarea
                   value={formData.remarks}
                   onChange={(e) => handleInputChange("remarks", e.target.value)}
                   placeholder="Enter remarks"
-                  className="h-8 text-xs resize-none"
+                  className="min-h-[100px]"
                 />
               </div>
             </div>
 
             {/* Submit Button */}
-            <div className="flex justify-center pt-4 border-t">
+            <div className="flex justify-center pt-6">
               <Button 
                 type="submit" 
                 size="lg" 
-                className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 px-8 h-10 text-sm font-medium shadow-lg"
+                className="px-8"
                 disabled={isSubmitting}
               >
                 {isSubmitting ? (

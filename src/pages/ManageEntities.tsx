@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { collection, addDoc, getDocs, query, where, deleteDoc, doc, updateDoc } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
@@ -14,12 +15,16 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 interface Entity {
   id: string;
   name: string;
+  email?: string;
+  phone?: string;
   documentUrl?: string;
   documentName?: string;
 }
 
 interface NewEntity {
   name: string;
+  email?: string;
+  phone?: string;
   document?: File;
 }
 
@@ -28,9 +33,9 @@ export default function ManageEntities() {
 
   const [activeTab, setActiveTab] = useState('shippers');
   const [entities, setEntities] = useState<Entity[]>([]);
-  const [newEntity, setNewEntity] = useState<NewEntity>({ name: '', document: null });
+  const [newEntity, setNewEntity] = useState<NewEntity>({ name: '', email: '', phone: '', document: null });
   const [editEntity, setEditEntity] = useState<Entity | null>(null);
-  const [editName, setEditName] = useState('');
+  const [editData, setEditData] = useState({ name: '', email: '', phone: '' });
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -63,11 +68,11 @@ export default function ManageEntities() {
     setActiveTab(value);
     setEntities([]);
     setEditEntity(null);
-    setNewEntity({ name: '', document: null });
+    setNewEntity({ name: '', email: '', phone: '', document: null });
   };
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setNewEntity({ ...newEntity, name: e.target.value });
+  const handleInputChange = (field: string, value: string) => {
+    setNewEntity({ ...newEntity, [field]: value });
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -76,8 +81,8 @@ export default function ManageEntities() {
     }
   };
 
-  const handleEditInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setEditName(e.target.value);
+  const handleEditInputChange = (field: string, value: string) => {
+    setEditData({ ...editData, [field]: value });
   };
 
   const addEntity = async () => {
@@ -105,6 +110,8 @@ export default function ManageEntities() {
 
       await addDoc(collection(db, collectionName), {
         name: newEntity.name,
+        email: newEntity.email || '',
+        phone: newEntity.phone || '',
         documentUrl: documentUrl || null,
         documentName: documentName || null,
       });
@@ -113,7 +120,7 @@ export default function ManageEntities() {
         title: "Entity Added",
         description: `${newEntity.name} has been added to ${collectionName}.`,
       });
-      setNewEntity({ name: '', document: null });
+      setNewEntity({ name: '', email: '', phone: '', document: null });
       fetchEntities();
     } catch (error) {
       console.error('Error adding entity:', error);
@@ -157,12 +164,16 @@ export default function ManageEntities() {
 
   const startEdit = (entity: Entity) => {
     setEditEntity(entity);
-    setEditName(entity.name);
+    setEditData({ 
+      name: entity.name, 
+      email: entity.email || '', 
+      phone: entity.phone || '' 
+    });
   };
 
   const cancelEdit = () => {
     setEditEntity(null);
-    setEditName('');
+    setEditData({ name: '', email: '', phone: '' });
   };
 
   const saveEdit = async () => {
@@ -172,11 +183,11 @@ export default function ManageEntities() {
     try {
       const collectionName = activeTab;
       const entityDocRef = doc(db, collectionName, editEntity.id);
-      await updateDoc(entityDocRef, { name: editName });
+      await updateDoc(entityDocRef, editData);
 
       toast({
         title: "Entity Updated",
-        description: `${editName} has been updated in ${collectionName}.`,
+        description: `${editData.name} has been updated in ${collectionName}.`,
       });
       cancelEdit();
       fetchEntities();
@@ -244,57 +255,66 @@ export default function ManageEntities() {
               <TabsTrigger value="shippers">Shippers</TabsTrigger>
               <TabsTrigger value="consignees">Consignees</TabsTrigger>
               <TabsTrigger value="overseas_agents">Overseas Agents</TabsTrigger>
-              {/* Add more tabs as needed */}
             </TabsList>
             <TabsContent value="shippers">
-              {renderEntityManagement('shippers', entities, newEntity, handleInputChange, handleFileChange, addEntity, loading, deleteEntity, editEntity, editName, handleEditInputChange, startEdit, cancelEdit, saveEdit, downloadDocument)}
+              {renderEntityManagement('shippers')}
             </TabsContent>
             <TabsContent value="consignees">
-              {renderEntityManagement('consignees', entities, newEntity, handleInputChange, handleFileChange, addEntity, loading, deleteEntity, editEntity, editName, handleEditInputChange, startEdit, cancelEdit, saveEdit, downloadDocument)}
+              {renderEntityManagement('consignees')}
             </TabsContent>
             <TabsContent value="overseas_agents">
-              {renderEntityManagement('overseas_agents', entities, newEntity, handleInputChange, handleFileChange, addEntity, loading, deleteEntity, editEntity, editName, handleEditInputChange, startEdit, cancelEdit, saveEdit, downloadDocument)}
+              {renderEntityManagement('overseas_agents')}
             </TabsContent>
           </Tabs>
         </CardContent>
       </Card>
     </div>
   );
-}
 
-function renderEntityManagement(
-  tabName: string,
-  entities: Entity[],
-  newEntity: NewEntity,
-  handleInputChange: (e: React.ChangeEvent<HTMLInputElement>) => void,
-  handleFileChange: (e: React.ChangeEvent<HTMLInputElement>) => void,
-  addEntity: () => Promise<void>,
-  loading: boolean,
-  deleteEntity: (entityId: string, entityName: string, documentUrl?: string) => Promise<void>,
-  editEntity: Entity | null,
-  editName: string,
-  handleEditInputChange: (e: React.ChangeEvent<HTMLInputElement>) => void,
-  startEdit: (entity: Entity) => void,
-  cancelEdit: () => void,
-  saveEdit: () => Promise<void>,
-  downloadDocument: (entity: Entity) => void
-) {
-  return (
-    <div className="space-y-4">
-      {/* Add Entity Section */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div>
-          <Label htmlFor="entityName">
-            Add {tabName.replace('_', ' ')} Name
-          </Label>
-          <Input
-            type="text"
-            id="entityName"
-            placeholder={`Enter ${tabName.replace('_', ' ')} name`}
-            value={newEntity.name}
-            onChange={handleInputChange}
-            disabled={loading}
-          />
+  function renderEntityManagement(tabName: string) {
+    return (
+      <div className="space-y-4">
+        {/* Add Entity Section */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div>
+            <Label htmlFor="entityName">
+              {tabName.replace('_', ' ')} Name
+            </Label>
+            <Input
+              type="text"
+              id="entityName"
+              placeholder={`Enter ${tabName.replace('_', ' ')} name`}
+              value={newEntity.name}
+              onChange={(e) => handleInputChange('name', e.target.value)}
+              disabled={loading}
+            />
+          </div>
+          <div>
+            <Label htmlFor="entityEmail">
+              Email
+            </Label>
+            <Input
+              type="email"
+              id="entityEmail"
+              placeholder="Enter email"
+              value={newEntity.email}
+              onChange={(e) => handleInputChange('email', e.target.value)}
+              disabled={loading}
+            />
+          </div>
+          <div>
+            <Label htmlFor="entityPhone">
+              Phone
+            </Label>
+            <Input
+              type="text"
+              id="entityPhone"
+              placeholder="Enter phone"
+              value={newEntity.phone}
+              onChange={(e) => handleInputChange('phone', e.target.value)}
+              disabled={loading}
+            />
+          </div>
         </div>
         <div>
           <Label htmlFor="entityDocument">
@@ -307,94 +327,115 @@ function renderEntityManagement(
             disabled={loading}
           />
         </div>
-      </div>
-      <Button onClick={addEntity} disabled={loading}>
-        <Plus className="w-4 h-4 mr-2" />
-        Add {tabName.replace('_', ' ')}
-      </Button>
+        <Button onClick={addEntity} disabled={loading}>
+          <Plus className="w-4 h-4 mr-2" />
+          Add {tabName.replace('_', ' ')}
+        </Button>
 
-      {/* Entity List Section */}
-      {entities.length > 0 ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {entities.map((entity) => (
-            <Card key={entity.id} className="shadow-sm">
-              <CardHeader>
-                {editEntity?.id === entity.id ? (
-                  <Input
-                    type="text"
-                    value={editName}
-                    onChange={handleEditInputChange}
-                    className="text-sm"
-                  />
-                ) : (
-                  <CardTitle className="text-sm">{entity.name}</CardTitle>
-                )}
-              </CardHeader>
-              <CardContent className="flex items-center justify-between p-2">
-                <div>
-                  {entity.documentUrl && (
-                    <Button
-                      variant="secondary"
-                      size="sm"
-                      onClick={() => downloadDocument(entity)}
-                      className="mr-2"
-                      disabled={loading}
-                    >
-                      <FileText className="w-3 h-3 mr-1" />
-                      Document
-                    </Button>
-                  )}
-                </div>
-                <div>
+        {/* Entity List Section */}
+        {entities.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {entities.map((entity) => (
+              <Card key={entity.id} className="shadow-sm">
+                <CardHeader>
                   {editEntity?.id === entity.id ? (
-                    <>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={saveEdit}
-                        disabled={loading}
-                      >
-                        Save
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={cancelEdit}
-                        disabled={loading}
-                      >
-                        Cancel
-                      </Button>
-                    </>
+                    <div className="space-y-2">
+                      <Input
+                        type="text"
+                        value={editData.name}
+                        onChange={(e) => handleEditInputChange('name', e.target.value)}
+                        className="text-sm"
+                        placeholder="Name"
+                      />
+                      <Input
+                        type="email"
+                        value={editData.email}
+                        onChange={(e) => handleEditInputChange('email', e.target.value)}
+                        className="text-sm"
+                        placeholder="Email"
+                      />
+                      <Input
+                        type="text"
+                        value={editData.phone}
+                        onChange={(e) => handleEditInputChange('phone', e.target.value)}
+                        className="text-sm"
+                        placeholder="Phone"
+                      />
+                    </div>
                   ) : (
-                    <>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => startEdit(entity)}
-                        disabled={loading}
-                      >
-                        <Edit2 className="w-3 h-3 mr-1" />
-                        Edit
-                      </Button>
-                      <Button
-                        variant="destructive"
-                        size="sm"
-                        onClick={() => deleteEntity(entity.id, entity.name, entity.documentUrl)}
-                        disabled={loading}
-                      >
-                        <Trash2 className="w-3 h-3 mr-1" />
-                        Delete
-                      </Button>
-                    </>
+                    <div>
+                      <CardTitle className="text-sm">{entity.name}</CardTitle>
+                      {entity.email && <p className="text-xs text-gray-600">{entity.email}</p>}
+                      {entity.phone && <p className="text-xs text-gray-600">{entity.phone}</p>}
+                    </div>
                   )}
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      ) : (
-        <Badge variant="secondary">No {tabName.replace('_', ' ')} added yet.</Badge>
-      )}
-    </div>
-  );
+                </CardHeader>
+                <CardContent className="flex items-center justify-between p-2">
+                  <div>
+                    {entity.documentUrl && (
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        onClick={() => downloadDocument(entity)}
+                        className="mr-2"
+                        disabled={loading}
+                      >
+                        <FileText className="w-3 h-3 mr-1" />
+                        Document
+                      </Button>
+                    )}
+                  </div>
+                  <div>
+                    {editEntity?.id === entity.id ? (
+                      <>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={saveEdit}
+                          disabled={loading}
+                        >
+                          Save
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={cancelEdit}
+                          disabled={loading}
+                        >
+                          Cancel
+                        </Button>
+                      </>
+                    ) : (
+                      <>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => startEdit(entity)}
+                          disabled={loading}
+                        >
+                          <Edit2 className="w-3 h-3 mr-1" />
+                          Edit
+                        </Button>
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          onClick={() => deleteEntity(entity.id, entity.name, entity.documentUrl)}
+                          disabled={loading}
+                        >
+                          <Trash2 className="w-3 h-3 mr-1" />
+                          Delete
+                        </Button>
+                      </>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        ) : (
+          <Badge variant="secondary">No {tabName.replace('_', ' ')} added yet.</Badge>
+        )}
+      </div>
+    );
+  }
 }

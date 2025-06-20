@@ -11,7 +11,9 @@ import { auth, db } from '@/config/firebase';
 import { User, AuthState } from '@/types/auth';
 
 interface AuthContextType extends AuthState {
-  login: (userId: string, password: string) => Promise<void>;
+  login: (userI
+
+: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
 }
 
@@ -23,12 +25,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    // Check for stored user session
+    // Check for stored user session first
     const storedUser = localStorage.getItem('currentUser');
     if (storedUser) {
       try {
         const userData = JSON.parse(storedUser);
+        console.log('Restored user from localStorage:', userData);
         setUser(userData);
+        setLoading(false);
+        return;
       } catch (error) {
         console.error('Error parsing stored user:', error);
         localStorage.removeItem('currentUser');
@@ -80,22 +85,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         } catch (err) {
           console.error('Error fetching user data:', err);
           setError('Failed to load user data');
-          const basicUser: User = {
-            id: firebaseUser.uid,
-            email: firebaseUser.email!,
-            role: 'superadmin',
-            firstName: '',
-            lastName: '',
-            shortName: '',
-            permissions: {},
-            createdAt: new Date(),
-            createdBy: ''
-          };
-          setUser(basicUser);
-          localStorage.setItem('currentUser', JSON.stringify(basicUser));
         }
       } else {
-        console.log('No user, setting user to null');
+        console.log('No user, clearing stored session');
         setUser(null);
         localStorage.removeItem('currentUser');
       }
