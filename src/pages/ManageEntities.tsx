@@ -2,216 +2,194 @@ import React, { useState, useEffect } from 'react';
 import { collection, addDoc, getDocs, query, where, deleteDoc, doc, updateDoc } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
 import { db, storage } from '@/config/firebase';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Badge } from '@/components/ui/badge';
+import { Trash2, Edit2, Plus, FileText, Upload, X } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { Plus, Edit, Trash2, Upload, FileText, Download } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 interface Entity {
   id: string;
   name: string;
-  phone: string;
-  email: string;
   documentUrl?: string;
   documentName?: string;
-  createdAt: Date;
 }
 
-const EntityTab = ({ 
-  entityType, 
-  entityLabel 
-}: { 
-  entityType: string; 
-  entityLabel: string; 
-}) => {
-  const [entities, setEntities] = useState<Entity[]>([]);
-  const [name, setName] = useState('');
-  const [phone, setPhone] = useState('');
-  const [email, setEmail] = useState('');
-  const [document, setDocument] = useState<File | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [editingEntity, setEditingEntity] = useState<Entity | null>(null);
+interface NewEntity {
+  name: string;
+  document?: File;
+}
+
+export default function ManageEntities() {
   const { toast } = useToast();
+
+  const [activeTab, setActiveTab] = useState('shippers');
+  const [entities, setEntities] = useState<Entity[]>([]);
+  const [newEntity, setNewEntity] = useState<NewEntity>({ name: '', document: null });
+  const [editEntity, setEditEntity] = useState<Entity | null>(null);
+  const [editName, setEditName] = useState('');
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     fetchEntities();
-  }, [entityType]);
+  }, [activeTab]);
 
   const fetchEntities = async () => {
+    setLoading(true);
     try {
-      const querySnapshot = await getDocs(collection(db, entityType));
-      const entitiesList: Entity[] = [];
+      const collectionName = activeTab;
+      const querySnapshot = await getDocs(collection(db, collectionName));
+      const entityList: Entity[] = [];
       querySnapshot.forEach((doc) => {
-        const data = doc.data();
-        entitiesList.push({
-          id: doc.id,
-          name: data.name,
-          phone: data.phone,
-          email: data.email,
-          documentUrl: data.documentUrl,
-          documentName: data.documentName,
-          createdAt: data.createdAt?.toDate(),
-        });
+        entityList.push({ id: doc.id, ...doc.data() } as Entity);
       });
-      setEntities(entitiesList.sort((a, b) => a.name.localeCompare(b.name)));
+      setEntities(entityList);
     } catch (error) {
       console.error('Error fetching entities:', error);
-    }
-  };
-
-  const uploadDocument = async (file: File, entityId: string): Promise<{ url: string; name: string }> => {
-    const timestamp = Date.now();
-    const fileName = `${entityType}/${entityId}/${timestamp}_${file.name}`;
-    const storageRef = ref(storage, fileName);
-    
-    await uploadBytes(storageRef, file);
-    const downloadURL = await getDownloadURL(storageRef);
-    
-    return { url: downloadURL, name: file.name };
-  };
-
-  const deleteDocument = async (documentUrl: string) => {
-    try {
-      const fileRef = ref(storage, documentUrl);
-      await deleteObject(fileRef);
-    } catch (error) {
-      console.error('Error deleting document:', error);
-    }
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!name.trim()) return;
-
-    setIsLoading(true);
-
-    try {
-      // Check if name already exists (case-insensitive)
-      const existingQuery = query(
-        collection(db, entityType),
-        where('name', '==', name.trim())
-      );
-      const existingSnapshot = await getDocs(existingQuery);
-
-      if (!existingSnapshot.empty && !editingEntity) {
-        toast({
-          title: "Error",
-          description: `${entityLabel} with this name already exists. Please choose a different name.`,
-          variant: "destructive",
-        });
-        setIsLoading(false);
-        return;
-      }
-
-      let documentData: { documentUrl?: string; documentName?: string } = {};
-
-      // Handle document upload
-      if (document) {
-        try {
-          const entityId = editingEntity?.id || Date.now().toString();
-          const uploadResult = await uploadDocument(document, entityId);
-          documentData.documentUrl = uploadResult.url;
-          documentData.documentName = uploadResult.name;
-
-          // If editing and there was an old document, delete it
-          if (editingEntity?.documentUrl) {
-            await deleteDocument(editingEntity.documentUrl);
-          }
-        } catch (error) {
-          console.error('Error uploading document:', error);
-          toast({
-            title: "Warning",
-            description: "Document upload failed, but entity will be saved without document.",
-            variant: "destructive",
-          });
-        }
-      }
-
-      const entityData = {
-        name: name.trim(),
-        phone: phone.trim(),
-        email: email.trim(),
-        ...documentData,
-        createdAt: editingEntity ? editingEntity.createdAt : new Date(),
-      };
-
-      if (editingEntity) {
-        await updateDoc(doc(db, entityType, editingEntity.id), entityData);
-        toast({
-          title: "Success",
-          description: `${entityLabel} updated successfully`,
-        });
-      } else {
-        await addDoc(collection(db, entityType), entityData);
-        toast({
-          title: "Success",
-          description: `${entityLabel} added successfully`,
-        });
-      }
-
-      setName('');
-      setPhone('');
-      setEmail('');
-      setDocument(null);
-      setEditingEntity(null);
-      setIsDialogOpen(false);
-      fetchEntities();
-    } catch (error) {
       toast({
         title: "Error",
-        description: `Failed to ${editingEntity ? 'update' : 'add'} ${entityLabel}`,
+        description: "Failed to fetch entities. Please try again.",
         variant: "destructive",
       });
     } finally {
-      setIsLoading(false);
+      setLoading(false);
     }
   };
 
-  const handleEdit = (entity: Entity) => {
-    setEditingEntity(entity);
-    setName(entity.name);
-    setPhone(entity.phone);
-    setEmail(entity.email);
-    setDocument(null);
-    setIsDialogOpen(true);
+  const handleTabChange = (value: string) => {
+    setActiveTab(value);
+    setEntities([]);
+    setEditEntity(null);
+    setNewEntity({ name: '', document: null });
   };
 
-  const handleDelete = async (entity: Entity) => {
-    if (confirm(`Are you sure you want to delete ${entity.name}?`)) {
-      try {
-        // Delete document if exists
-        if (entity.documentUrl) {
-          await deleteDocument(entity.documentUrl);
-        }
-        
-        await deleteDoc(doc(db, entityType, entity.id));
-        toast({
-          title: "Success",
-          description: `${entityLabel} deleted successfully`,
-        });
-        fetchEntities();
-      } catch (error) {
-        toast({
-          title: "Error",
-          description: `Failed to delete ${entityLabel}`,
-          variant: "destructive",
-        });
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setNewEntity({ ...newEntity, name: e.target.value });
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0) {
+      setNewEntity({ ...newEntity, document: e.target.files[0] });
+    }
+  };
+
+  const handleEditInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setEditName(e.target.value);
+  };
+
+  const addEntity = async () => {
+    if (!newEntity.name.trim()) {
+      toast({
+        title: "Validation Error",
+        description: "Entity name cannot be empty.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const collectionName = activeTab;
+      let documentUrl = null;
+      let documentName = null;
+
+      if (newEntity.document) {
+        const storageRef = ref(storage, `${collectionName}/${newEntity.document.name}`);
+        await uploadBytes(storageRef, newEntity.document);
+        documentUrl = await getDownloadURL(storageRef);
+        documentName = newEntity.document.name;
       }
+
+      await addDoc(collection(db, collectionName), {
+        name: newEntity.name,
+        documentUrl: documentUrl || null,
+        documentName: documentName || null,
+      });
+
+      toast({
+        title: "Entity Added",
+        description: `${newEntity.name} has been added to ${collectionName}.`,
+      });
+      setNewEntity({ name: '', document: null });
+      fetchEntities();
+    } catch (error) {
+      console.error('Error adding entity:', error);
+      toast({
+        title: "Error",
+        description: "Failed to add entity. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
     }
   };
 
-  const resetForm = () => {
-    setName('');
-    setPhone('');
-    setEmail('');
-    setDocument(null);
-    setEditingEntity(null);
+  const deleteEntity = async (entityId: string, entityName: string, documentUrl?: string) => {
+    setLoading(true);
+    try {
+      const collectionName = activeTab;
+      await deleteDoc(doc(db, collectionName, entityId));
+
+      if (documentUrl) {
+        const fileRef = ref(storage, documentUrl);
+        await deleteObject(fileRef);
+      }
+
+      toast({
+        title: "Entity Deleted",
+        description: `${entityName} has been deleted from ${collectionName}.`,
+      });
+      fetchEntities();
+    } catch (error) {
+      console.error('Error deleting entity:', error);
+      toast({
+        title: "Error",
+        description: "Failed to delete entity. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const startEdit = (entity: Entity) => {
+    setEditEntity(entity);
+    setEditName(entity.name);
+  };
+
+  const cancelEdit = () => {
+    setEditEntity(null);
+    setEditName('');
+  };
+
+  const saveEdit = async () => {
+    if (!editEntity) return;
+
+    setLoading(true);
+    try {
+      const collectionName = activeTab;
+      const entityDocRef = doc(db, collectionName, editEntity.id);
+      await updateDoc(entityDocRef, { name: editName });
+
+      toast({
+        title: "Entity Updated",
+        description: `${editName} has been updated in ${collectionName}.`,
+      });
+      cancelEdit();
+      fetchEntities();
+    } catch (error) {
+      console.error('Error updating entity:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update entity. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
   const downloadDocument = async (entity: Entity) => {
@@ -255,190 +233,168 @@ const EntityTab = ({
   };
 
   return (
-    <div className="space-y-4">
-      <div className="flex justify-between items-center">
-        <h3 className="text-lg font-semibold">Manage {entityLabel}s</h3>
-        <Dialog open={isDialogOpen} onOpenChange={(open) => {
-          setIsDialogOpen(open);
-          if (!open) resetForm();
-        }}>
-          <DialogTrigger asChild>
-            <Button>
-              <Plus className="w-4 h-4 mr-2" />
-              Add {entityLabel}
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-md">
-            <DialogHeader>
-              <DialogTitle>{editingEntity ? 'Edit' : 'Add'} {entityLabel}</DialogTitle>
-              <DialogDescription>
-                {editingEntity ? 'Update' : 'Enter'} the details for the {entityLabel.toLowerCase()}.
-              </DialogDescription>
-            </DialogHeader>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="name">Name *</Label>
-                <Input
-                  id="name"
-                  placeholder={`Enter ${entityLabel.toLowerCase()} name`}
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  required
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="phone">Phone</Label>
-                <Input
-                  id="phone"
-                  placeholder="Enter phone number"
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder="Enter email address"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="document">Document</Label>
-                <div className="flex items-center space-x-2">
-                  <Input
-                    id="document"
-                    type="file"
-                    accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
-                    onChange={(e) => setDocument(e.target.files?.[0] || null)}
-                    className="flex-1"
-                  />
-                  <Upload className="w-4 h-4 text-gray-400" />
-                </div>
-                {editingEntity?.documentName && !document && (
-                  <p className="text-xs text-gray-500">
-                    Current: {editingEntity.documentName}
-                  </p>
-                )}
-              </div>
-              <div className="flex justify-end space-x-2">
-                <Button 
-                  type="button" 
-                  variant="outline" 
-                  onClick={() => setIsDialogOpen(false)}
-                >
-                  Cancel
-                </Button>
-                <Button type="submit" disabled={isLoading}>
-                  {isLoading ? 'Saving...' : editingEntity ? 'Update' : 'Add'}
-                </Button>
-              </div>
-            </form>
-          </DialogContent>
-        </Dialog>
-      </div>
-
-      <Card>
-        <CardContent className="p-0">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Name</TableHead>
-                <TableHead>Phone</TableHead>
-                <TableHead>Email</TableHead>
-                <TableHead>Document</TableHead>
-                <TableHead>Created Date</TableHead>
-                <TableHead>Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {entities.map((entity) => (
-                <TableRow key={entity.id}>
-                  <TableCell className="font-medium">{entity.name}</TableCell>
-                  <TableCell>{entity.phone}</TableCell>
-                  <TableCell>{entity.email}</TableCell>
-                  <TableCell>
-                    {entity.documentUrl ? (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => downloadDocument(entity)}
-                        className="flex items-center gap-1"
-                      >
-                        <FileText className="w-3 h-3" />
-                        <Download className="w-3 h-3" />
-                      </Button>
-                    ) : (
-                      <span className="text-gray-400 text-sm">No document</span>
-                    )}
-                  </TableCell>
-                  <TableCell>{entity.createdAt?.toLocaleDateString()}</TableCell>
-                  <TableCell>
-                    <div className="flex space-x-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleEdit(entity)}
-                      >
-                        <Edit className="w-4 h-4" />
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleDelete(entity)}
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
-              {entities.length === 0 && (
-                <TableRow>
-                  <TableCell colSpan={6} className="text-center py-6 text-muted-foreground">
-                    No {entityLabel.toLowerCase()}s found. Add one to get started.
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
-    </div>
-  );
-};
-
-export default function ManageEntities() {
-  return (
-    <div className="p-6">
-      <Card>
-        <CardHeader>
-          <CardTitle>Manage Entities</CardTitle>
-          <CardDescription>
-            Manage shippers, consignees, and overseas agents for job creation
-          </CardDescription>
+    <div className="p-3 h-full overflow-auto">
+      <Card className="max-w-4xl mx-auto shadow-sm">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-lg">Manage Entities</CardTitle>
         </CardHeader>
-        <CardContent>
-          <Tabs defaultValue="shippers" className="w-full">
-            <TabsList className="grid w-full grid-cols-3">
+        <CardContent className="p-4">
+          <Tabs value={activeTab} onValueChange={handleTabChange}>
+            <TabsList>
               <TabsTrigger value="shippers">Shippers</TabsTrigger>
               <TabsTrigger value="consignees">Consignees</TabsTrigger>
               <TabsTrigger value="overseas_agents">Overseas Agents</TabsTrigger>
+              {/* Add more tabs as needed */}
             </TabsList>
-            <TabsContent value="shippers" className="mt-6">
-              <EntityTab entityType="shippers" entityLabel="Shipper" />
+            <TabsContent value="shippers">
+              {renderEntityManagement('shippers', entities, newEntity, handleInputChange, handleFileChange, addEntity, loading, deleteEntity, editEntity, editName, handleEditInputChange, startEdit, cancelEdit, saveEdit, downloadDocument)}
             </TabsContent>
-            <TabsContent value="consignees" className="mt-6">
-              <EntityTab entityType="consignees" entityLabel="Consignee" />
+            <TabsContent value="consignees">
+              {renderEntityManagement('consignees', entities, newEntity, handleInputChange, handleFileChange, addEntity, loading, deleteEntity, editEntity, editName, handleEditInputChange, startEdit, cancelEdit, saveEdit, downloadDocument)}
             </TabsContent>
-            <TabsContent value="overseas_agents" className="mt-6">
-              <EntityTab entityType="overseas_agents" entityLabel="Overseas Agent" />
+            <TabsContent value="overseas_agents">
+              {renderEntityManagement('overseas_agents', entities, newEntity, handleInputChange, handleFileChange, addEntity, loading, deleteEntity, editEntity, editName, handleEditInputChange, startEdit, cancelEdit, saveEdit, downloadDocument)}
             </TabsContent>
           </Tabs>
         </CardContent>
       </Card>
+    </div>
+  );
+}
+
+function renderEntityManagement(
+  tabName: string,
+  entities: Entity[],
+  newEntity: NewEntity,
+  handleInputChange: (e: React.ChangeEvent<HTMLInputElement>) => void,
+  handleFileChange: (e: React.ChangeEvent<HTMLInputElement>) => void,
+  addEntity: () => Promise<void>,
+  loading: boolean,
+  deleteEntity: (entityId: string, entityName: string, documentUrl?: string) => Promise<void>,
+  editEntity: Entity | null,
+  editName: string,
+  handleEditInputChange: (e: React.ChangeEvent<HTMLInputElement>) => void,
+  startEdit: (entity: Entity) => void,
+  cancelEdit: () => void,
+  saveEdit: () => Promise<void>,
+  downloadDocument: (entity: Entity) => void
+) {
+  return (
+    <div className="space-y-4">
+      {/* Add Entity Section */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <Label htmlFor="entityName">
+            Add {tabName.replace('_', ' ')} Name
+          </Label>
+          <Input
+            type="text"
+            id="entityName"
+            placeholder={`Enter ${tabName.replace('_', ' ')} name`}
+            value={newEntity.name}
+            onChange={handleInputChange}
+            disabled={loading}
+          />
+        </div>
+        <div>
+          <Label htmlFor="entityDocument">
+            Upload Document (Optional)
+          </Label>
+          <Input
+            type="file"
+            id="entityDocument"
+            onChange={handleFileChange}
+            disabled={loading}
+          />
+        </div>
+      </div>
+      <Button onClick={addEntity} disabled={loading}>
+        <Plus className="w-4 h-4 mr-2" />
+        Add {tabName.replace('_', ' ')}
+      </Button>
+
+      {/* Entity List Section */}
+      {entities.length > 0 ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {entities.map((entity) => (
+            <Card key={entity.id} className="shadow-sm">
+              <CardHeader>
+                {editEntity?.id === entity.id ? (
+                  <Input
+                    type="text"
+                    value={editName}
+                    onChange={handleEditInputChange}
+                    className="text-sm"
+                  />
+                ) : (
+                  <CardTitle className="text-sm">{entity.name}</CardTitle>
+                )}
+              </CardHeader>
+              <CardContent className="flex items-center justify-between p-2">
+                <div>
+                  {entity.documentUrl && (
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      onClick={() => downloadDocument(entity)}
+                      className="mr-2"
+                      disabled={loading}
+                    >
+                      <FileText className="w-3 h-3 mr-1" />
+                      Document
+                    </Button>
+                  )}
+                </div>
+                <div>
+                  {editEntity?.id === entity.id ? (
+                    <>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={saveEdit}
+                        disabled={loading}
+                      >
+                        Save
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={cancelEdit}
+                        disabled={loading}
+                      >
+                        Cancel
+                      </Button>
+                    </>
+                  ) : (
+                    <>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => startEdit(entity)}
+                        disabled={loading}
+                      >
+                        <Edit2 className="w-3 h-3 mr-1" />
+                        Edit
+                      </Button>
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        onClick={() => deleteEntity(entity.id, entity.name, entity.documentUrl)}
+                        disabled={loading}
+                      >
+                        <Trash2 className="w-3 h-3 mr-1" />
+                        Delete
+                      </Button>
+                    </>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      ) : (
+        <Badge variant="secondary">No {tabName.replace('_', ' ')} added yet.</Badge>
+      )}
     </div>
   );
 }

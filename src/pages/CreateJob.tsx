@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -10,7 +11,6 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { collection, addDoc, serverTimestamp, getDocs, query, orderBy, limit } from "firebase/firestore";
 import { db } from "@/config/firebase";
-import { JobFormData } from "@/types/job";
 import { FilterableSelect } from "@/components/FilterableSelect";
 
 interface Entity {
@@ -25,39 +25,64 @@ interface RMUser {
   shortName: string;
 }
 
+interface JobFormData {
+  rmName: string;
+  shipmentType: string;
+  modeOfShipment: string;
+  shipperDetails: string;
+  consigneeDetails: string;
+  overseasAgentDetails: string;
+  bookingNo: string;
+  invoiceNo: string;
+  grossWeight: string;
+  netWeight: string;
+  totalPackages: string;
+  portOfLoading: string;
+  etaPod: string;
+  finalDestination: string;
+  vesselVoyDetails: string;
+  airShippingLine: string;
+  containerFlightNumbers: string[];
+  mblNo: string;
+  mblDate: string;
+  hblNo: string;
+  hblDate: string;
+  terms: string;
+  remarks: string;
+}
+
 export default function CreateJob() {
   const { toast } = useToast();
   const { user } = useAuth();
   
   const [formData, setFormData] = useState<JobFormData>({
-    bookingNo: "",
-    consigneeDetails: "",
-    containerFlightNumbers: [],
-    etaPod: "",
-    finalDestination: "",
-    grossWeight: "",
-    hblDate: "",
-    hblNo: "",
-    invoiceNo: "",
-    lclFclAir: "",
-    mblDate: "",
-    mblNo: "",
-    modeOfShipment: "",
-    netWeight: "",
-    overseasAgentDetails: "",
-    portOfLoading: "",
-    remarks: "",
     rmName: "",
     shipmentType: "",
+    modeOfShipment: "",
     shipperDetails: "",
-    status: "",
-    terms: "",
+    consigneeDetails: "",
+    overseasAgentDetails: "",
+    bookingNo: "",
+    invoiceNo: "",
+    grossWeight: "",
+    netWeight: "",
     totalPackages: "",
+    portOfLoading: "",
+    etaPod: "",
+    finalDestination: "",
     vesselVoyDetails: "",
     airShippingLine: "",
+    containerFlightNumbers: [],
+    mblNo: "",
+    mblDate: "",
+    hblNo: "",
+    hblDate: "",
+    terms: "",
+    remarks: "",
   });
 
   const [newContainerNumber, setNewContainerNumber] = useState("");
+  const [previousTerms, setPreviousTerms] = useState<string[]>([]);
 
   // Entity options for dropdowns
   const [shippers, setShippers] = useState<Entity[]>([]);
@@ -68,6 +93,7 @@ export default function CreateJob() {
   useEffect(() => {
     fetchEntities();
     fetchRMUsers();
+    fetchPreviousTerms();
   }, []);
 
   const fetchEntities = async () => {
@@ -116,6 +142,22 @@ export default function CreateJob() {
       setRmUsers(rmList.sort((a, b) => a.firstName.localeCompare(b.firstName)));
     } catch (error) {
       console.error('Error fetching RM users:', error);
+    }
+  };
+
+  const fetchPreviousTerms = async () => {
+    try {
+      const jobsSnapshot = await getDocs(collection(db, 'jobs'));
+      const termsSet = new Set<string>();
+      jobsSnapshot.forEach((doc) => {
+        const data = doc.data();
+        if (data.terms && data.terms.trim()) {
+          termsSet.add(data.terms.trim());
+        }
+      });
+      setPreviousTerms(Array.from(termsSet).sort());
+    } catch (error) {
+      console.error('Error fetching previous terms:', error);
     }
   };
 
@@ -199,6 +241,8 @@ export default function CreateJob() {
       const jobData = {
         ...formData,
         jobNumber,
+        status: "Active",
+        lclFclAir: "",
         createdBy: user.id,
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
@@ -213,31 +257,29 @@ export default function CreateJob() {
       
       // Reset form
       setFormData({
-        bookingNo: "",
-        consigneeDetails: "",
-        containerFlightNumbers: [],
-        etaPod: "",
-        finalDestination: "",
-        grossWeight: "",
-        hblDate: "",
-        hblNo: "",
-        invoiceNo: "",
-        lclFclAir: "",
-        mblDate: "",
-        mblNo: "",
-        modeOfShipment: "",
-        netWeight: "",
-        overseasAgentDetails: "",
-        portOfLoading: "",
-        remarks: "",
         rmName: "",
         shipmentType: "",
+        modeOfShipment: "",
         shipperDetails: "",
-        status: "",
-        terms: "",
+        consigneeDetails: "",
+        overseasAgentDetails: "",
+        bookingNo: "",
+        invoiceNo: "",
+        grossWeight: "",
+        netWeight: "",
         totalPackages: "",
+        portOfLoading: "",
+        etaPod: "",
+        finalDestination: "",
         vesselVoyDetails: "",
         airShippingLine: "",
+        containerFlightNumbers: [],
+        mblNo: "",
+        mblDate: "",
+        hblNo: "",
+        hblDate: "",
+        terms: "",
+        remarks: "",
       });
       setNewContainerNumber("");
     } catch (error) {
@@ -283,41 +325,6 @@ export default function CreateJob() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
               
               <div className="space-y-1">
-                <Label htmlFor="bookingNo" className="text-xs font-medium">Booking Number</Label>
-                <Input
-                  id="bookingNo"
-                  value={formData.bookingNo}
-                  onChange={(e) => handleInputChange("bookingNo", e.target.value)}
-                  placeholder="3426"
-                  className="h-8 text-sm"
-                />
-              </div>
-              <div className="space-y-1">
-                <Label htmlFor="invoiceNo" className="text-xs font-medium">Invoice Number</Label>
-                <Input
-                  id="invoiceNo"
-                  value={formData.invoiceNo}
-                  onChange={(e) => handleInputChange("invoiceNo", e.target.value)}
-                  placeholder="3426"
-                  className="h-8 text-sm"
-                />
-              </div>
-              <div className="space-y-1">
-                <Label htmlFor="status" className="text-xs font-medium">Status</Label>
-                <FilterableSelect
-                  options={[
-                    { value: "Active", label: "Active" },
-                    { value: "Pending", label: "Pending" },
-                    { value: "Completed", label: "Completed" },
-                    { value: "Cancelled", label: "Cancelled" }
-                  ]}
-                  value={formData.status}
-                  onValueChange={(value) => handleInputChange("status", value)}
-                  placeholder="Select status"
-                  className="h-8 text-sm"
-                />
-              </div>
-              <div className="space-y-1">
                 <Label htmlFor="rmName" className="text-xs font-medium">RM Name</Label>
                 <FilterableSelect
                   options={rmOptions}
@@ -328,32 +335,7 @@ export default function CreateJob() {
                   className="h-8 text-sm"
                 />
               </div>
-              
-              <div className="space-y-1">
-                <Label htmlFor="airShippingLine" className="text-xs font-medium">Air/Shipping Line</Label>
-                <Input
-                  id="airShippingLine"
-                  value={formData.airShippingLine}
-                  onChange={(e) => handleInputChange("airShippingLine", e.target.value)}
-                  placeholder="ONE"
-                  className="h-8 text-sm"
-                />
-              </div>
-              <div className="space-y-1">
-                <Label htmlFor="modeOfShipment" className="text-xs font-medium">Mode of Shipment</Label>
-                <FilterableSelect
-                  options={[
-                    { value: "Sea", label: "Sea" },
-                    { value: "Air", label: "Air" },
-                    { value: "Road", label: "Road" },
-                    { value: "Rail", label: "Rail" }
-                  ]}
-                  value={formData.modeOfShipment}
-                  onValueChange={(value) => handleInputChange("modeOfShipment", value)}
-                  placeholder="Select mode"
-                  className="h-8 text-sm"
-                />
-              </div>
+
               <div className="space-y-1">
                 <Label htmlFor="shipmentType" className="text-xs font-medium">Shipment Type</Label>
                 <FilterableSelect
@@ -367,24 +349,114 @@ export default function CreateJob() {
                   className="h-8 text-sm"
                 />
               </div>
+
               <div className="space-y-1">
-                <Label htmlFor="lclFclAir" className="text-xs font-medium">LCL/FCL/Air</Label>
+                <Label htmlFor="modeOfShipment" className="text-xs font-medium">Mode of Shipment</Label>
                 <FilterableSelect
                   options={[
-                    { value: "LCL", label: "LCL" },
-                    { value: "FCL", label: "FCL" },
-                    { value: "Air", label: "Air" }
+                    { value: "Air", label: "Air" },
+                    { value: "Sea", label: "Sea" }
                   ]}
-                  value={formData.lclFclAir}
-                  onValueChange={(value) => handleInputChange("lclFclAir", value)}
-                  placeholder="Select option"
+                  value={formData.modeOfShipment}
+                  onValueChange={(value) => handleInputChange("modeOfShipment", value)}
+                  placeholder="Select mode"
                   className="h-8 text-sm"
                 />
               </div>
 
-              
               <div className="space-y-1">
-                <Label htmlFor="portOfLoading" className="text-xs font-medium">Port of Loading</Label>
+                <Label htmlFor="shipperDetails" className="text-xs font-medium">Shipper Name</Label>
+                <FilterableSelect
+                  options={shipperOptions}
+                  value={formData.shipperDetails}
+                  onValueChange={(value) => handleInputChange("shipperDetails", value)}
+                  placeholder="Select shipper"
+                  searchPlaceholder="Search shippers..."
+                  className="h-8 text-sm"
+                />
+              </div>
+
+              <div className="space-y-1">
+                <Label htmlFor="consigneeDetails" className="text-xs font-medium">Consignee</Label>
+                <FilterableSelect
+                  options={consigneeOptions}
+                  value={formData.consigneeDetails}
+                  onValueChange={(value) => handleInputChange("consigneeDetails", value)}
+                  placeholder="Select consignee"
+                  searchPlaceholder="Search consignees..."
+                  className="h-8 text-sm"
+                />
+              </div>
+
+              <div className="space-y-1">
+                <Label htmlFor="overseasAgentDetails" className="text-xs font-medium">Overseas Agent</Label>
+                <FilterableSelect
+                  options={agentOptions}
+                  value={formData.overseasAgentDetails}
+                  onValueChange={(value) => handleInputChange("overseasAgentDetails", value)}
+                  placeholder="Select overseas agent"
+                  searchPlaceholder="Search overseas agents..."
+                  className="h-8 text-sm"
+                />
+              </div>
+
+              <div className="space-y-1">
+                <Label htmlFor="bookingNo" className="text-xs font-medium">Booking No</Label>
+                <Input
+                  id="bookingNo"
+                  value={formData.bookingNo}
+                  onChange={(e) => handleInputChange("bookingNo", e.target.value)}
+                  placeholder="Enter booking number"
+                  className="h-8 text-sm"
+                />
+              </div>
+
+              <div className="space-y-1">
+                <Label htmlFor="invoiceNo" className="text-xs font-medium">Invoice No</Label>
+                <Input
+                  id="invoiceNo"
+                  value={formData.invoiceNo}
+                  onChange={(e) => handleInputChange("invoiceNo", e.target.value)}
+                  placeholder="Enter invoice number"
+                  className="h-8 text-sm"
+                />
+              </div>
+
+              <div className="space-y-1">
+                <Label htmlFor="grossWeight" className="text-xs font-medium">Gross Weight</Label>
+                <Input
+                  id="grossWeight"
+                  value={formData.grossWeight}
+                  onChange={(e) => handleInputChange("grossWeight", e.target.value)}
+                  placeholder="10148.00"
+                  className="h-8 text-sm"
+                />
+              </div>
+
+              <div className="space-y-1">
+                <Label htmlFor="netWeight" className="text-xs font-medium">Net Weight</Label>
+                <Input
+                  id="netWeight"
+                  value={formData.netWeight}
+                  onChange={(e) => handleInputChange("netWeight", e.target.value)}
+                  placeholder="9800"
+                  className="h-8 text-sm"
+                />
+              </div>
+
+              <div className="space-y-1">
+                <Label htmlFor="totalPackages" className="text-xs font-medium">Total Packages</Label>
+                <Input
+                  id="totalPackages"
+                  value={formData.totalPackages}
+                  onChange={(e) => handleInputChange("totalPackages", e.target.value)}
+                  placeholder="15 PLTS"
+                  className="h-8 text-sm"
+                />
+              </div>
+
+              <div className="space-y-1">
+                <Label htmlFor="portOfLoading" className="text-xs font-medium">Port Of Loading</Label>
                 <Input
                   id="portOfLoading"
                   value={formData.portOfLoading}
@@ -393,16 +465,7 @@ export default function CreateJob() {
                   className="h-8 text-sm"
                 />
               </div>
-              <div className="space-y-1">
-                <Label htmlFor="finalDestination" className="text-xs font-medium">Final Destination</Label>
-                <Input
-                  id="finalDestination"
-                  value={formData.finalDestination}
-                  onChange={(e) => handleInputChange("finalDestination", e.target.value)}
-                  placeholder="ICD TKD"
-                  className="h-8 text-sm"
-                />
-              </div>
+
               <div className="space-y-1">
                 <Label htmlFor="etaPod" className="text-xs font-medium">ETA POD</Label>
                 <Input
@@ -414,76 +477,41 @@ export default function CreateJob() {
                 />
               </div>
 
-              
               <div className="space-y-1">
-                <Label htmlFor="grossWeight" className="text-xs font-medium">Gross Weight</Label>
+                <Label htmlFor="finalDestination" className="text-xs font-medium">Final Destination</Label>
                 <Input
-                  id="grossWeight"
-                  value={formData.grossWeight}
-                  onChange={(e) => handleInputChange("grossWeight", e.target.value)}
-                  placeholder="10148.00"
-                  className="h-8 text-sm"
-                />
-              </div>
-              <div className="space-y-1">
-                <Label htmlFor="netWeight" className="text-xs font-medium">Net Weight</Label>
-                <Input
-                  id="netWeight"
-                  value={formData.netWeight}
-                  onChange={(e) => handleInputChange("netWeight", e.target.value)}
-                  placeholder="9800"
-                  className="h-8 text-sm"
-                />
-              </div>
-              <div className="space-y-1">
-                <Label htmlFor="totalPackages" className="text-xs font-medium">Total Packages</Label>
-                <Input
-                  id="totalPackages"
-                  value={formData.totalPackages}
-                  onChange={(e) => handleInputChange("totalPackages", e.target.value)}
-                  placeholder="15 PLTS"
-                  className="h-8 text-sm"
-                />
-              </div>
-              <div className="space-y-1">
-                <Label htmlFor="terms" className="text-xs font-medium">Terms</Label>
-                <FilterableSelect
-                  options={[
-                    { value: "FOB", label: "FOB" },
-                    { value: "CIF", label: "CIF" },
-                    { value: "CFR", label: "CFR" },
-                    { value: "EXW", label: "EXW" }
-                  ]}
-                  value={formData.terms}
-                  onValueChange={(value) => handleInputChange("terms", value)}
-                  placeholder="Select terms"
+                  id="finalDestination"
+                  value={formData.finalDestination}
+                  onChange={(e) => handleInputChange("finalDestination", e.target.value)}
+                  placeholder="ICD TKD"
                   className="h-8 text-sm"
                 />
               </div>
 
-              
-              <div className="space-y-1">
-                <Label htmlFor="hblNo" className="text-xs font-medium">HBL Number</Label>
+              <div className="space-y-1 lg:col-span-2">
+                <Label htmlFor="vesselVoyDetails" className="text-xs font-medium">Vessel And Voy Details</Label>
                 <Input
-                  id="hblNo"
-                  value={formData.hblNo}
-                  onChange={(e) => handleInputChange("hblNo", e.target.value)}
-                  placeholder="TPENDL25040858"
+                  id="vesselVoyDetails"
+                  value={formData.vesselVoyDetails}
+                  onChange={(e) => handleInputChange("vesselVoyDetails", e.target.value)}
+                  placeholder="EVER EAGLE - 188W"
                   className="h-8 text-sm"
                 />
               </div>
+
               <div className="space-y-1">
-                <Label htmlFor="hblDate" className="text-xs font-medium">HBL Date</Label>
+                <Label htmlFor="airShippingLine" className="text-xs font-medium">Air/Shipping Line</Label>
                 <Input
-                  id="hblDate"
-                  type="date"
-                  value={formData.hblDate}
-                  onChange={(e) => handleInputChange("hblDate", e.target.value)}
+                  id="airShippingLine"
+                  value={formData.airShippingLine}
+                  onChange={(e) => handleInputChange("airShippingLine", e.target.value)}
+                  placeholder="ONE"
                   className="h-8 text-sm"
                 />
               </div>
+
               <div className="space-y-1">
-                <Label htmlFor="mblNo" className="text-xs font-medium">MBL Number</Label>
+                <Label htmlFor="mblNo" className="text-xs font-medium">MBL/MAWB No</Label>
                 <Input
                   id="mblNo"
                   value={formData.mblNo}
@@ -492,8 +520,9 @@ export default function CreateJob() {
                   className="h-8 text-sm"
                 />
               </div>
+
               <div className="space-y-1">
-                <Label htmlFor="mblDate" className="text-xs font-medium">MBL Date</Label>
+                <Label htmlFor="mblDate" className="text-xs font-medium">MBL/MAWB Date</Label>
                 <Input
                   id="mblDate"
                   type="date"
@@ -503,22 +532,49 @@ export default function CreateJob() {
                 />
               </div>
 
-              
-              <div className="space-y-1 lg:col-span-4">
-                <Label htmlFor="vesselVoyDetails" className="text-xs font-medium">Vessel/Voyage Details</Label>
+              <div className="space-y-1">
+                <Label htmlFor="hblNo" className="text-xs font-medium">HBL/HAWB No</Label>
                 <Input
-                  id="vesselVoyDetails"
-                  value={formData.vesselVoyDetails}
-                  onChange={(e) => handleInputChange("vesselVoyDetails", e.target.value)}
-                  placeholder="EVER EAGLE - 188W"
+                  id="hblNo"
+                  value={formData.hblNo}
+                  onChange={(e) => handleInputChange("hblNo", e.target.value)}
+                  placeholder="TPENDL25040858"
                   className="h-8 text-sm"
                 />
+              </div>
+
+              <div className="space-y-1">
+                <Label htmlFor="hblDate" className="text-xs font-medium">HBL/HAWB Date</Label>
+                <Input
+                  id="hblDate"
+                  type="date"
+                  value={formData.hblDate}
+                  onChange={(e) => handleInputChange("hblDate", e.target.value)}
+                  className="h-8 text-sm"
+                />
+              </div>
+
+              <div className="space-y-1">
+                <Label htmlFor="terms" className="text-xs font-medium">Terms</Label>
+                <Input
+                  id="terms"
+                  value={formData.terms}
+                  onChange={(e) => handleInputChange("terms", e.target.value)}
+                  placeholder="Enter terms"
+                  className="h-8 text-sm"
+                  list="terms-suggestions"
+                />
+                <datalist id="terms-suggestions">
+                  {previousTerms.map((term, index) => (
+                    <option key={index} value={term} />
+                  ))}
+                </datalist>
               </div>
             </div>
 
             {/* Container/Flight Numbers Section */}
             <div className="space-y-3">
-              <Label className="text-sm font-medium">Container/Flight Numbers</Label>
+              <Label className="text-sm font-medium">Container No/Flight No</Label>
               <div className="flex gap-2">
                 <Input
                   value={newContainerNumber}
@@ -556,51 +612,16 @@ export default function CreateJob() {
               )}
             </div>
 
-            {/* Full Width Fields with Entity Dropdowns */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
-              <div className="space-y-1">
-                <Label htmlFor="consigneeDetails" className="text-xs font-medium">Consignee Details</Label>
-                <FilterableSelect
-                  options={consigneeOptions}
-                  value={formData.consigneeDetails}
-                  onValueChange={(value) => handleInputChange("consigneeDetails", value)}
-                  placeholder="Select or search consignee"
-                  searchPlaceholder="Search consignees..."
-                  className="h-8 text-sm w-full"
-                />
-              </div>
-              <div className="space-y-1">
-                <Label htmlFor="shipperDetails" className="text-xs font-medium">Shipper Details</Label>
-                <FilterableSelect
-                  options={shipperOptions}
-                  value={formData.shipperDetails}
-                  onValueChange={(value) => handleInputChange("shipperDetails", value)}
-                  placeholder="Select or search shipper"
-                  searchPlaceholder="Search shippers..."
-                  className="h-8 text-sm w-full"
-                />
-              </div>
-              <div className="space-y-1">
-                <Label htmlFor="overseasAgentDetails" className="text-xs font-medium">Overseas Agent Details</Label>
-                <FilterableSelect
-                  options={agentOptions}
-                  value={formData.overseasAgentDetails}
-                  onValueChange={(value) => handleInputChange("overseasAgentDetails", value)}
-                  placeholder="Select or search overseas agent"
-                  searchPlaceholder="Search overseas agents..."
-                  className="h-8 text-sm w-full"
-                />
-              </div>
-              <div className="space-y-1">
-                <Label htmlFor="remarks" className="text-xs font-medium">Remarks</Label>
-                <Textarea
-                  id="remarks"
-                  value={formData.remarks}
-                  onChange={(e) => handleInputChange("remarks", e.target.value)}
-                  placeholder="BILL AS PER QUOTE"
-                  className="min-h-[60px] text-sm resize-none"
-                />
-              </div>
+            {/* Remarks Section */}
+            <div className="space-y-1">
+              <Label htmlFor="remarks" className="text-xs font-medium">Remarks</Label>
+              <Textarea
+                id="remarks"
+                value={formData.remarks}
+                onChange={(e) => handleInputChange("remarks", e.target.value)}
+                placeholder="BILL AS PER QUOTE"
+                className="min-h-[60px] text-sm resize-none"
+              />
             </div>
 
             {/* Action Buttons */}
